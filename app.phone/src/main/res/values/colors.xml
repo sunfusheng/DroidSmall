@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="phoneColorPrimary">#ba68c8</color>
+    <color name="phoneColorPrimaryDark">#ba68c8</color>
+    <color name="phoneColorAccent">#f97b5c</color>
+
+</resources>

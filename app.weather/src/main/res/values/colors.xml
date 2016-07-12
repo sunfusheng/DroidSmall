@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="weatherColorPrimary">#ff5555</color>
+    <color name="weatherColorPrimaryDark">#ff5555</color>
+    <color name="weatherColorAccent">#f97b5c</color>
+
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tv_phone"
+        style="@style/TvTextViewStyle"
+        android:layout_marginTop="20dp"
+        android:text="获取北京天气信息"
+        android:gravity="center"/>
+
+    <TextView
+        android:id="@+id/tv_result"
+        style="@style/TvTextViewStyle"
+        android:background="@color/transparent"/>
+
+</LinearLayout>
