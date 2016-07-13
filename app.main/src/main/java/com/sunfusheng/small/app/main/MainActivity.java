@@ -62,11 +62,9 @@ public class MainActivity extends BaseActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_wether:
-                updatePatchBundle("com.sunfusheng.small.lib.framework", "libcom_sunfusheng_small_lib_framework.so");
                 updatePatchBundle("com.sunfusheng.small.app.weather", "libcom_sunfusheng_small_app_weather.so");
                 return true;
             case R.id.action_phone:
-                updatePatchBundle("com.sunfusheng.small.lib.framework", "libcom_sunfusheng_small_lib_framework.so");
                 updatePatchBundle("com.sunfusheng.small.app.phone", "libcom_sunfusheng_small_app_phone.so");
                 return true;
             default:
@@ -74,30 +72,35 @@ public class MainActivity extends BaseActivity {
         }
     }
 
-    private void updatePatchBundle(String pkgName, String fileName) {
-        try {
-            String path = Environment.getExternalStorageDirectory() + "/DroidSmall";
-            File inFile = new File(path, fileName);
-            if (!inFile.exists()) return;
-            net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
-            File outFile = bundle.getPatchFile();
+    private void updatePatchBundle(final String pkgName, final String fileName) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    String path = Environment.getExternalStorageDirectory() + "/DroidSmall";
+                    File inFile = new File(path, fileName);
+                    if (!inFile.exists()) return;
+                    net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
+                    File outFile = bundle.getPatchFile();
 
-            InputStream is = new FileInputStream(inFile);
-            OutputStream os = new FileOutputStream(outFile);
+                    InputStream is = new FileInputStream(inFile);
+                    OutputStream os = new FileOutputStream(outFile);
 
-            byte[] buffer = new byte[1024];
-            int length;
-            while ((length = is.read(buffer)) != -1) {
-                os.write(buffer, 0, length);
+                    byte[] buffer = new byte[1024];
+                    int length;
+                    while ((length = is.read(buffer)) != -1) {
+                        os.write(buffer, 0, length);
+                    }
+
+                    os.flush();
+                    os.close();
+                    is.close();
+                    bundle.upgrade();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
-
-            os.flush();
-            os.close();
-            is.close();
-            bundle.upgrade();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        }).start();
     }
 
 }
