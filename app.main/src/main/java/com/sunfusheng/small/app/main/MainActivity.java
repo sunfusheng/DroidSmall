@@ -76,7 +76,7 @@ public class MainActivity extends BaseActivity {
 
     private void updatePatchBundle(String pkgName, String fileName) {
         try {
-            String path = Environment.getExternalStorageDirectory() + File.separator + "DroidSmall";
+            String path = Environment.getExternalStorageDirectory() + "/DroidSmall";
             File inFile = new File(path, fileName);
             if (!inFile.exists()) return;
             net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
