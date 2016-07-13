@@ -1,10 +1,19 @@
 package com.sunfusheng.small.app.main;
 
 import android.os.Bundle;
+import android.os.Environment;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
 import net.wequick.small.Small;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -42,4 +51,51 @@ public class MainActivity extends BaseActivity {
                 break;
         }
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_wether:
+                updatePatchBundle("com.sunfusheng.small.app.weather", "libcom_sunfusheng_small_app_weather.so");
+                return true;
+            case R.id.action_phone:
+                updatePatchBundle("com.sunfusheng.small.app.phone", "libcom_sunfusheng_small_app_phone.so");
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
+
+    private void updatePatchBundle(String pkgName, String fileName) {
+        String path = Environment.getExternalStorageDirectory() + File.separator + "DroidSmall";
+        net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
+
+        try {
+            File inFile = new File(path, fileName);
+            File outFile = bundle.getPatchFile();
+            InputStream is = new FileInputStream(inFile);
+            OutputStream os = new FileOutputStream(outFile);
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = is.read(buffer)) != -1) {
+                os.write(buffer, 0, length);
+            }
+
+            os.flush();
+            os.close();
+            is.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        bundle.upgrade();
+    }
+
+
 }

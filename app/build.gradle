@@ -25,10 +25,6 @@ android {
         disable 'InvalidPackage'
     }
 
-    aaptOptions {
-        additionalParameters '-c', 'zh-rCN'
-    }
-
     signingConfigs {
         release {
             storeFile file(prop['KEYSTORE_FILEPATH'])
