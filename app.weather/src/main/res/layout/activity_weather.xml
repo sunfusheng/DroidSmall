@@ -15,6 +15,7 @@
     <TextView
         android:id="@+id/tv_result"
         style="@style/TvTextViewStyle"
-        android:background="@color/transparent"/>
+        android:background="@color/transparent"
+        android:text="最新版本号：1"/>
 
 </LinearLayout>

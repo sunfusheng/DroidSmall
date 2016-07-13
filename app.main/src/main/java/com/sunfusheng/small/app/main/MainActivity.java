@@ -62,9 +62,11 @@ public class MainActivity extends BaseActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_wether:
+                updatePatchBundle("com.sunfusheng.small.lib.framework", "libcom_sunfusheng_small_lib_framework.so");
                 updatePatchBundle("com.sunfusheng.small.app.weather", "libcom_sunfusheng_small_app_weather.so");
                 return true;
             case R.id.action_phone:
+                updatePatchBundle("com.sunfusheng.small.lib.framework", "libcom_sunfusheng_small_lib_framework.so");
                 updatePatchBundle("com.sunfusheng.small.app.phone", "libcom_sunfusheng_small_app_phone.so");
                 return true;
             default:
@@ -73,12 +75,13 @@ public class MainActivity extends BaseActivity {
     }
 
     private void updatePatchBundle(String pkgName, String fileName) {
-        String path = Environment.getExternalStorageDirectory() + File.separator + "DroidSmall";
-        net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
-
         try {
+            String path = Environment.getExternalStorageDirectory() + File.separator + "DroidSmall";
             File inFile = new File(path, fileName);
+            if (!inFile.exists()) return;
+            net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
             File outFile = bundle.getPatchFile();
+
             InputStream is = new FileInputStream(inFile);
             OutputStream os = new FileOutputStream(outFile);
 
@@ -91,11 +94,10 @@ public class MainActivity extends BaseActivity {
             os.flush();
             os.close();
             is.close();
+            bundle.upgrade();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        bundle.upgrade();
     }
-
 
 }
