@@ -1,11 +1,14 @@
 package com.sunfusheng.small.app.main;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import net.wequick.small.Small;
 
@@ -24,6 +27,8 @@ public class MainActivity extends BaseActivity {
     TextView tvWeather;
     @Bind(R.id.tv_phone)
     TextView tvPhone;
+    @Bind(R.id.tv_number)
+    TextView tvNumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,17 +42,21 @@ public class MainActivity extends BaseActivity {
     private void initListener() {
         tvPhone.setOnClickListener(this);
         tvWeather.setOnClickListener(this);
+        tvNumber.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
         super.onClick(v);
         switch (v.getId()) {
-            case R.id.tv_phone:
-                Small.openUri("phone", MainActivity.this);
-                break;
             case R.id.tv_weather:
-                Small.openUri("weather", MainActivity.this);
+                Small.openUri("weather", mContext);
+                break;
+            case R.id.tv_phone:
+                Small.openUri("phone", mContext);
+                break;
+            case R.id.tv_number:
+                Small.openUri("phone/Number?num=18600604601&toast=Fucking amazing!", mContext);
                 break;
         }
     }
@@ -103,4 +112,14 @@ public class MainActivity extends BaseActivity {
         }).start();
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == 1000 && data != null) {
+            String result = data.getStringExtra("result");
+            if (!TextUtils.isEmpty(result)) {
+                Toast.makeText(mContext, result, Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 }

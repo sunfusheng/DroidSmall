@@ -16,6 +16,12 @@
         android:id="@+id/tv_phone"
         style="@style/TvTextViewStyle"
         android:gravity="center"
-        android:text="获取手机号码归属地"/>
+        android:text="获取手机号码归属地 (PhoneActivity)"/>
+
+    <TextView
+        android:id="@+id/tv_number"
+        style="@style/TvTextViewStyle"
+        android:gravity="center"
+        android:text="获取手机号码归属地 (NumberActivity)"/>
 
 </LinearLayout>

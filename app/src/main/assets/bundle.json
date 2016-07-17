@@ -14,12 +14,15 @@
       "pkg": "com.sunfusheng.small.app.main"
     },
     {
-      "uri": "phone",
-      "pkg": "com.sunfusheng.small.app.phone"
-    },
-    {
       "uri": "weather",
       "pkg": "com.sunfusheng.small.app.weather"
+    },
+    {
+      "uri": "phone",
+      "pkg": "com.sunfusheng.small.app.phone",
+      "rules": {
+        "Number": "Number"
+      }
     }
   ]
 }

@@ -6,15 +6,15 @@
     android:orientation="vertical">
 
     <EditText
-        android:id="@+id/et_phone"
+        android:id="@+id/et_number"
         style="@style/EtEditTextStyle"
         android:layout_marginTop="20dp"
         android:hint="手机号码"
         android:maxEms="11"
-        android:text="15698219533"/>
+        android:text=""/>
 
     <TextView
-        android:id="@+id/tv_phone"
+        android:id="@+id/tv_number"
         style="@style/TvTextViewStyle"
         android:text="获取手机号码归属地"
         android:gravity="center"/>
