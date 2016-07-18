@@ -10,6 +10,8 @@ import com.sunfusheng.small.lib.framework.proxy.ControlFactory;
 public class DroidFramework {
 
     private static Context mContext;
+    public static final String LOG_ACTIVITY = "log-activity";
+    public static final String LOG_FRAGMENT = "log-fragment";
     public static final String LOG_URL = "log-url";
     public static final String LOG_CONTENT = "log-content";
 

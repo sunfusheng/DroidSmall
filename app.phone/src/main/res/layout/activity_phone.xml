@@ -3,7 +3,10 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
+
+    <include layout="@layout/app_toolbar"/>
 
     <EditText
         android:id="@+id/et_phone"
@@ -16,8 +19,8 @@
     <TextView
         android:id="@+id/tv_phone"
         style="@style/TvTextViewStyle"
-        android:text="获取手机号码归属地"
-        android:gravity="center"/>
+        android:gravity="center"
+        android:text="获取手机号码归属地"/>
 
     <TextView
         android:id="@+id/tv_result"

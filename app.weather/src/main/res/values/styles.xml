@@ -4,6 +4,9 @@
         <item name="colorPrimary">@color/weatherColorPrimary</item>
         <item name="colorPrimaryDark">@color/weatherColorPrimaryDark</item>
         <item name="colorAccent">@color/weatherColorAccent</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:fitsSystemWindows">true</item>
     </style>
 
 </resources>

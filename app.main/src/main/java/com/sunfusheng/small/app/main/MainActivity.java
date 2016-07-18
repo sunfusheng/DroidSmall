@@ -3,12 +3,15 @@ package com.sunfusheng.small.app.main;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.sunfusheng.small.lib.framework.base.BaseActivity;
+import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
 
@@ -29,6 +32,8 @@ public class MainActivity extends BaseActivity {
     TextView tvPhone;
     @Bind(R.id.tv_number)
     TextView tvNumber;
+    @Bind(R.id.toolbar)
+    Toolbar toolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +41,12 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        initView();
         initListener();
+    }
+
+    private void initView() {
+        initToolBar(toolbar, false, "DroidSmall");
     }
 
     private void initListener() {
@@ -118,7 +128,7 @@ public class MainActivity extends BaseActivity {
         if (resultCode == 1000 && data != null) {
             String result = data.getStringExtra("result");
             if (!TextUtils.isEmpty(result)) {
-                Toast.makeText(mContext, "回传数据："+result, Toast.LENGTH_SHORT).show();
+                ToastTip.show("回传数据：" + result);
             }
         }
     }

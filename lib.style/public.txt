@@ -18,3 +18,5 @@ int string cancel 0x79040000
 int string ok 0x79040001
 int style EtEditTextStyle 0x79050000
 int style TvTextViewStyle 0x79050001
+int layout app_toolbar 0x79060000
+int id toolbar 0x79070000

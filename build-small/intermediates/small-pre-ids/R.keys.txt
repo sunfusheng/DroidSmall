@@ -1585,3 +1585,5 @@ int string cancel
 int string ok
 int style EtEditTextStyle
 int style TvTextViewStyle
+int layout app_toolbar
+int id toolbar

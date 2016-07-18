@@ -4,6 +4,9 @@
         <item name="colorPrimary">@color/phoneColorPrimary</item>
         <item name="colorPrimaryDark">@color/phoneColorPrimaryDark</item>
         <item name="colorAccent">@color/phoneColorAccent</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:fitsSystemWindows">true</item>
     </style>
 
 </resources>
