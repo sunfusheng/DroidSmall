@@ -17,7 +17,7 @@ public class SingleControl extends BaseControl {
         mApi = HttpApi.getInstance();
     }
 
-    @AsyncAtomMethod
+    @AsyncAtomMethod(withCancelableDialog = true, withMessage = "正在查询归属地...")
     public void getPhoneLocation(String tel) {
         try {
             PhoneEntity phoneEntity = mApi.getPhoneLocation(tel);
