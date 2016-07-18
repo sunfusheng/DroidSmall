@@ -21,7 +21,7 @@
       "uri": "phone",
       "pkg": "com.sunfusheng.small.app.phone",
       "rules": {
-        "Number": "Number"
+        "Number": ".ui.Number"
       }
     }
   ]

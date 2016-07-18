@@ -8,7 +8,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".PhoneActivity">
+        <activity android:name=".ui.PhoneActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -16,7 +16,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".NumberActivity"/>
+        <activity android:name=".ui.NumberActivity"/>
     </application>
 
 </manifest>
