@@ -29,4 +29,6 @@ dependencies {
 
     // OkHttp3
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
+
+    compile project(':lib.style')
 }
