@@ -38,7 +38,7 @@ public class NumberActivity extends BaseActivity {
             }
             String toast = uri.getQueryParameter("toast");
             if (!TextUtils.isEmpty(toast)) {
-                Toast.makeText(mContext, toast, Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, "传递参数："+toast, Toast.LENGTH_SHORT).show();
             }
         }
     }

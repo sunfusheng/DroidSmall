@@ -2,6 +2,8 @@ package com.sunfusheng.small.lib.framework;
 
 import android.content.Context;
 
+import com.sunfusheng.small.lib.framework.proxy.ControlFactory;
+
 /**
  * Created by sunfusheng on 16/4/13.
  */
@@ -17,6 +19,9 @@ public class DroidFramework {
     public static void init(Context context, boolean isLog) {
         mContext = context;
         LOG = isLog;
+
+        // 初始化代理类
+        ControlFactory.init(context);
     }
 
     public static Context getContext() {

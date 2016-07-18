@@ -118,7 +118,7 @@ public class MainActivity extends BaseActivity {
         if (resultCode == 1000 && data != null) {
             String result = data.getStringExtra("result");
             if (!TextUtils.isEmpty(result)) {
-                Toast.makeText(mContext, result, Toast.LENGTH_SHORT).show();
+                Toast.makeText(mContext, "回传数据："+result, Toast.LENGTH_SHORT).show();
             }
         }
     }
