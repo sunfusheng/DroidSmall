@@ -9,15 +9,9 @@
     <include layout="@layout/app_toolbar"/>
 
     <TextView
-        android:id="@+id/tv_weather"
-        style="@style/TvTextViewStyle"
-        android:layout_marginTop="20dp"
-        android:gravity="center"
-        android:text="获取北京天气信息"/>
-
-    <TextView
         android:id="@+id/tv_phone"
         style="@style/TvTextViewStyle"
+        android:layout_marginTop="20dp"
         android:gravity="center"
         android:text="获取手机号码归属地 (PhoneActivity)"/>
 
@@ -26,5 +20,11 @@
         style="@style/TvTextViewStyle"
         android:gravity="center"
         android:text="获取手机号码归属地 (NumberActivity)"/>
+
+    <TextView
+        android:id="@+id/tv_weather"
+        style="@style/TvTextViewStyle"
+        android:gravity="center"
+        android:text="获取北京天气信息"/>
 
 </LinearLayout>
