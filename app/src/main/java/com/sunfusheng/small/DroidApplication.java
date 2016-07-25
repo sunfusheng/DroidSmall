@@ -14,5 +14,6 @@ public class DroidApplication extends Application {
         super.onCreate();
 
         Small.preSetUp(this);
+
     }
 }
