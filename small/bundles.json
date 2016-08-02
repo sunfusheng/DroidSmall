@@ -1,0 +1,40 @@
+{
+  "manifest": {
+    "version": "1.0.0",
+    "bundles": [
+      {
+        "uri": "lib.style",
+        "pkg": "com.sunfusheng.small.lib.style"
+      },
+      {
+        "uri": "lib.framework",
+        "pkg": "com.sunfusheng.small.lib.framework"
+      },
+      {
+        "uri": "main",
+        "pkg": "com.sunfusheng.small.app.main"
+      },
+      {
+        "uri": "weather",
+        "pkg": "com.sunfusheng.small.app.weather"
+      },
+      {
+        "uri": "phone",
+        "pkg": "com.sunfusheng.small.app.phone",
+        "rules": {
+          "Number": ".ui.Number"
+        }
+      }
+    ]
+  },
+  "updates": [
+    {
+      "pkg": "com.sunfusheng.small.app.phone",
+      "url": "http://wequick.github.io/small/upgrade/libnet_wequick_example_small_app_about.so"
+    },
+    {
+      "pkg": "com.sunfusheng.small.app.weather",
+      "url": "http://wequick.github.io/small/upgrade/libnet_wequick_example_small_lib_utils.so"
+    }
+  ]
+}
