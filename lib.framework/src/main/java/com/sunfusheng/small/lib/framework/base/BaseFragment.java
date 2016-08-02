@@ -7,6 +7,9 @@ import android.view.View;
 
 import com.orhanobut.logger.Logger;
 import com.sunfusheng.small.lib.framework.DroidFramework;
+import com.sunfusheng.small.lib.framework.sharedpreferences.SettingsSharedPreferences;
+
+import de.devland.esperandro.Esperandro;
 
 /**
  * Created by sunfusheng on 16/7/18.
@@ -27,6 +30,14 @@ public class BaseFragment<T extends BaseControl> extends BaseAsyncFragment<T> im
 
     @Override
     public void onClick(View v) {
-
     }
+
+    protected <P> P getSharedPreferences(Class<P> spClass) {
+        return Esperandro.getPreferences(spClass, getActivity());
+    }
+
+    protected SettingsSharedPreferences getSettingsSharedPreferences() {
+        return getSharedPreferences(SettingsSharedPreferences.class);
+    }
+
 }

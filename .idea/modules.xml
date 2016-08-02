@@ -7,6 +7,7 @@
       <module fileurl="file://$PROJECT_DIR$/app.main/app.main.iml" filepath="$PROJECT_DIR$/app.main/app.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/app.phone/app.phone.iml" filepath="$PROJECT_DIR$/app.phone/app.phone.iml" />
       <module fileurl="file://$PROJECT_DIR$/app.weather/app.weather.iml" filepath="$PROJECT_DIR$/app.weather/app.weather.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/gradle-small.iml" filepath="$PROJECT_DIR$/buildSrc/gradle-small.iml" />
       <module fileurl="file://$PROJECT_DIR$/lib.framework/lib.framework.iml" filepath="$PROJECT_DIR$/lib.framework/lib.framework.iml" />
       <module fileurl="file://$PROJECT_DIR$/lib.style/lib.style.iml" filepath="$PROJECT_DIR$/lib.style/lib.style.iml" />
     </modules>

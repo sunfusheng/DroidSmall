@@ -1567,6 +1567,11 @@ int styleable ViewStubCompat_android_inflatedId
 int styleable ViewStubCompat_android_layout
 int drawable ripple_item_clicked
 int drawable ripple_item_clicked_with_mask
+int layout app_toolbar
+int string cancel
+int string ok
+int style EtEditTextStyle
+int style TvTextViewStyle
 int color bg
 int color bg_pressed
 int color black
@@ -1581,9 +1586,4 @@ int color font_black_5
 int color font_black_6
 int color transparent
 int color white
-int string cancel
-int string ok
-int style EtEditTextStyle
-int style TvTextViewStyle
-int layout app_toolbar
 int id toolbar

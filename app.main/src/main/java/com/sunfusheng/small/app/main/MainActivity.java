@@ -41,8 +41,15 @@ public class MainActivity extends BaseActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
 
+        initData();
         initView();
         initListener();
+    }
+
+    private void initData() {
+        Intent intent = new Intent(this, SmallService.class);
+        intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
+        startService(intent);
     }
 
     private void initView() {

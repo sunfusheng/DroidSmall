@@ -9,6 +9,10 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.sunfusheng.small.lib.framework.sharedpreferences.SettingsSharedPreferences;
+
+import de.devland.esperandro.Esperandro;
+
 /**
  * Created by sunfusheng on 16/7/7.
  */
@@ -53,6 +57,14 @@ public class BaseActivity<T extends BaseControl> extends BaseAsyncActivity<T> im
 
     @Override
     public void onClick(View v) {
+    }
+
+    protected <P> P getSharedPreferences(Class<P> spClass) {
+        return Esperandro.getPreferences(spClass, this);
+    }
+
+    protected SettingsSharedPreferences getSettingsSharedPreferences() {
+        return getSharedPreferences(SettingsSharedPreferences.class);
     }
 
 }
