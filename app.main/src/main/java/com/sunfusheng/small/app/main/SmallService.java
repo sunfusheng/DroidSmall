@@ -2,7 +2,6 @@ package com.sunfusheng.small.app.main;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -25,8 +24,6 @@ public class SmallService extends IntentService {
     public static final String SMALL_DOWNLOAD_PLUGINS = "small_download_plugins";
     public static final String SMALL_UPDATE_BUNDLES = "small_update_bundles";
 
-    private boolean isRunning = true;
-    private LocalBroadcastManager mLocalBroadcastManager;
     private PluginEntity mPluginEntity;
 
     public SmallService() {
@@ -36,15 +33,13 @@ public class SmallService extends IntentService {
     @Override
     public void onCreate() {
         super.onCreate();
-        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         Log.d("------>", "SmallService onCreate()");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        isRunning = true;
         String small = intent.getStringExtra("small");
-        Log.d("------>", "onHandleIntent() small: "+small);
+        Log.d("------>", "SmallService onHandleIntent() small: "+small);
         switch (small) {
             case SMALL_CHECK_UPDATE:
                 smallCheckUpdate();
@@ -56,13 +51,11 @@ public class SmallService extends IntentService {
 
                 break;
         }
-
-        isRunning = false;
     }
 
     private boolean smallCheckUpdate() {
         try {
-            URL url = new URL("https://github.com/sfsheng0322/DroidSmall/blob/master/small/bundles.json");
+            URL url = new URL("http://sunfusheng.com/assets/small/bundles.json");
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             StringBuilder sb = new StringBuilder();
             InputStream is = conn.getInputStream();
@@ -73,14 +66,20 @@ public class SmallService extends IntentService {
             }
             String plugin_bundles = sb.toString();
             if (TextUtils.isEmpty(plugin_bundles)) return false;
+
             Log.d("------>", "plugin_bundles: "+plugin_bundles);
             mPluginEntity = FastJsonUtil.parseJson(plugin_bundles, PluginEntity.class);
             if (mPluginEntity == null) return false;
+
             getSettingsSharedPreferences().plugin_bundles(plugin_bundles);
             boolean updateManifest = mPluginEntity.getManifest_code() > getSettingsSharedPreferences().manifest_code();
             boolean hasUpdates = mPluginEntity.getUpdates_code() > getSettingsSharedPreferences().updates_code();
             boolean hasAdditions = mPluginEntity.getAdditions_code() > getSettingsSharedPreferences().additions_code();
             if (!updateManifest && !hasUpdates && !hasAdditions) return false;
+
+            Intent intent = new Intent(this, SmallService.class);
+            intent.putExtra("small", SmallService.SMALL_DOWNLOAD_PLUGINS);
+            startService(intent);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -91,13 +90,6 @@ public class SmallService extends IntentService {
     public void onDestroy() {
         super.onDestroy();
         Log.d("------>", "SmallService onDestroy()");
-    }
-
-    // 发送服务状态信息
-    private void sendServiceStatus(String status) {
-        Intent intent = new Intent();
-        intent.putExtra("status", status);
-        mLocalBroadcastManager.sendBroadcast(intent);
     }
 
     protected <P> P getSharedPreferences(Class<P> spClass) {
