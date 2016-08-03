@@ -13,12 +13,12 @@
         android:background="@color/transparent"
         android:layout_marginTop="20dp"
         android:text="新版插件，更新成功！"
-        android:visibility="gone"/>
+        android:visibility="visible"/>
 
     <TextView
         android:id="@+id/tv_weather"
         style="@style/TvTextViewStyle"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="0dp"
         android:gravity="center"
         android:text="获取北京天气信息"/>
 
