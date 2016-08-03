@@ -86,11 +86,11 @@ public class SmallService extends IntentService {
             if (mSmallEntity == null) return false;
 
             getSettingsSharedPreferences().plugin_bundles(plugin_bundles);
-            initPluginEntities();
-
-            Intent intent = new Intent(this, SmallService.class);
-            intent.putExtra("small", SmallService.SMALL_DOWNLOAD_PLUGINS);
-            startService(intent);
+            if (initPluginEntities()) {
+                Intent intent = new Intent(this, SmallService.class);
+                intent.putExtra("small", SMALL_DOWNLOAD_PLUGINS);
+                startService(intent);
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
