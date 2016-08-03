@@ -8,6 +8,13 @@
 
     <include layout="@layout/app_toolbar"/>
 
+    <TextView
+        style="@style/TvTextViewStyle"
+        android:background="@color/transparent"
+        android:layout_marginTop="20dp"
+        android:text="新版插件，更新成功！"
+        android:visibility="gone"/>
+
     <EditText
         android:id="@+id/et_phone"
         style="@style/EtEditTextStyle"

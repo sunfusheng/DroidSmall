@@ -132,9 +132,9 @@ public class MainActivity extends BaseActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-//        Intent intent = new Intent(this, SmallService.class);
-//        intent.putExtra("small", SmallService.SMALL_UPDATE_BUNDLES);
-//        startService(intent);
+        Intent intent = new Intent(this, SmallService.class);
+        intent.putExtra("small", SmallService.SMALL_UPDATE_BUNDLES);
+        startService(intent);
     }
 
     @Override

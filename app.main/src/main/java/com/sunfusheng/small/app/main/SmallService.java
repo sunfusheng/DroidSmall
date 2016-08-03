@@ -159,6 +159,9 @@ public class SmallService extends IntentService {
                 }
                 Log.d("------>", "更新插件成功");
             }
+            getSettingsSharedPreferences().manifest_code(mSmallEntity.getManifest_code());
+            getSettingsSharedPreferences().updates_code(mSmallEntity.getUpdates_code());
+            getSettingsSharedPreferences().additions_code(mSmallEntity.getAdditions_code());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -171,6 +174,7 @@ public class SmallService extends IntentService {
             String filePath = getFilePathBySDCard();
             File inFile = new File(filePath, fileName);
             if (!inFile.exists()) return;
+
             net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
             File outFile = bundle.getPatchFile();
 
