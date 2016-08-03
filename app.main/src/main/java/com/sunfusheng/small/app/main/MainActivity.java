@@ -130,6 +130,14 @@ public class MainActivity extends BaseActivity {
     }
 
     @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        Intent intent = new Intent(this, SmallService.class);
+        intent.putExtra("small", SmallService.SMALL_UPDATE_BUNDLES);
+        startService(intent);
+    }
+
+    @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == 1000 && data != null) {
