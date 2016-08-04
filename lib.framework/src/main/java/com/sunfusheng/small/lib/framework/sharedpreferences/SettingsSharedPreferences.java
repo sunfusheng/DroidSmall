@@ -22,4 +22,10 @@ public interface SettingsSharedPreferences extends SharedPreferenceActions {
     int additions_code();
     void additions_code(int additions_code);
 
+    int small_update();
+    void small_update(int small_update);
+
+    int small_add();
+    void small_add(int small_add);
+
 }

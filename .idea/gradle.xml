@@ -11,6 +11,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/app.main" />
             <option value="$PROJECT_DIR$/app.phone" />
+            <option value="$PROJECT_DIR$/app.shanghai.weather" />
             <option value="$PROJECT_DIR$/app.weather" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/lib.framework" />
@@ -23,6 +24,7 @@
             <option value="$PROJECT_DIR$/app" />
             <option value="$PROJECT_DIR$/app.main" />
             <option value="$PROJECT_DIR$/app.phone" />
+            <option value="$PROJECT_DIR$/app.shanghai.weather" />
             <option value="$PROJECT_DIR$/app.weather" />
             <option value="$PROJECT_DIR$/buildSrc" />
             <option value="$PROJECT_DIR$/lib.framework" />

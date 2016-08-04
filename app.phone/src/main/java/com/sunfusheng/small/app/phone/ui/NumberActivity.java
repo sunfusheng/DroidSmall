@@ -57,7 +57,7 @@ public class NumberActivity extends BaseActivity<SingleControl> {
     }
 
     private void initView() {
-        initToolBar(toolbar, true, "NumberActivity");
+        initToolBar(toolbar, true, "Beijing`s Num");
     }
 
     private void initListener() {

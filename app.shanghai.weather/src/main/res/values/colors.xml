@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="shanghaiWeatherColorPrimary">#ff9800</color>
+    <color name="shanghaiWeatherColorPrimaryDark">#ff9800</color>
+    <color name="shanghaiWeatherColorAccent">#ff9800</color>
+
+</resources>

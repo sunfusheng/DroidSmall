@@ -34,7 +34,7 @@ public class WeatherActivity extends BaseActivity<SingleControl> {
     }
 
     private void initView() {
-        initToolBar(toolbar, true, "WeatherActivity");
+        initToolBar(toolbar, true, "Beijing`s Weather");
     }
 
     private void initListener() {

@@ -38,7 +38,7 @@ public class PhoneActivity extends BaseActivity<SingleControl> {
     }
 
     private void initView() {
-        initToolBar(toolbar, true, "PhoneActivity");
+        initToolBar(toolbar, true, "Shandong`s Num");
     }
 
     private void initListener() {

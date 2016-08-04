@@ -11,7 +11,7 @@
     <TextView
         style="@style/TvTextViewStyle"
         android:background="@color/blue"
-        android:text="恭喜你！插件更新成功！"
+        android:text="更新插件成功！"
         android:textColor="@color/white"
         android:visibility="gone"/>
 

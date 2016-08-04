@@ -1586,6 +1586,9 @@ int color font_black_5
 int color font_black_6
 int color transparent
 int color white
+int color blue
+int color purple
+int color red
 int id toolbar
 int attr md_background_color
 int attr md_btn_negative_selector
@@ -1834,6 +1837,3 @@ int styleable Toolbar_buttonGravity
 int styleable Toolbar_contentInsetEndWithActions
 int styleable Toolbar_contentInsetStartWithNavigation
 int styleable Toolbar_titleMargin
-int color blue
-int color purple
-int color red

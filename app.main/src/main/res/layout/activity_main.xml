@@ -4,14 +4,16 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
+    android:animateLayoutChanges="true"
     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
     <include layout="@layout/app_toolbar"/>
 
     <TextView
+        android:id="@+id/tv_status"
         style="@style/TvTextViewStyle"
         android:background="@color/red"
-        android:text="恭喜你！插件更新成功！"
+        android:text="恭喜你！更新插件成功！"
         android:textColor="@color/white"
         android:visibility="gone"/>
 
@@ -25,7 +27,7 @@
         <TextView
             android:id="@+id/tv_phone"
             style="@style/TvTextViewStyle"
-            android:text="获取手机号码归属地 (PhoneActivity)"/>
+            android:text="获取手机号码归属地 (Shandong`s Num)"/>
 
         <View
             android:layout_width="match_parent"
@@ -36,13 +38,40 @@
         <TextView
             android:id="@+id/tv_number"
             style="@style/TvTextViewStyle"
-            android:text="获取手机号码归属地 (NumberActivity)"/>
+            android:text="获取手机号码归属地 (Beijing`s Num)"/>
     </LinearLayout>
 
     <TextView
         android:id="@+id/tv_weather"
         style="@style/TvTextViewStyle"
         android:layout_marginTop="20dp"
-        android:text="获取北京天气信息 (WeatherActivity)"/>
+        android:text="获取北京天气信息 (Beijing`s Weather)"
+        android:visibility="visible"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:background="@color/white"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/tv_beijing_weather"
+            style="@style/TvTextViewStyle"
+            android:text="获取北京天气信息 (Beijing`s Weather)"/>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:layout_marginLeft="20dp"
+            android:background="@color/divider_1"/>
+
+        <TextView
+            android:id="@+id/tv_shanghai_weather"
+            style="@style/TvTextViewStyle"
+            android:text="获取上海天气信息 (Shanghai`s Weather)"/>
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -3,6 +3,7 @@ package com.sunfusheng.small.app.main;
 import android.app.IntentService;
 import android.content.Intent;
 import android.os.Environment;
+import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -32,47 +33,60 @@ import de.devland.esperandro.Esperandro;
  */
 public class SmallService extends IntentService {
 
+    // 本地广播 Action
+    public static final String ACTION_TYPE_STATUS = "action.type.status";
+
+    // 更新插件 Url
+    private static final String URL_UPDATES = "http://sunfusheng.com/assets/small/updates.json";
+    // 增加插件 Url
+    private static final String URL_ADDITIONS = "http://sunfusheng.com/assets/small/additions.json";
+
+    // 启动 Small 服务类型
     public static final String SMALL_CHECK_UPDATE = "small_check_update";
+    public static final String SMALL_CHECK_ADD = "small_check_add";
     public static final String SMALL_DOWNLOAD_PLUGINS = "small_download_plugins";
     public static final String SMALL_UPDATE_BUNDLES = "small_update_bundles";
+
+    private LocalBroadcastManager mLocalBroadcastManager;
 
     private SmallEntity mSmallEntity;
     private List<PluginEntity> mPluginEntities;
 
     public SmallService() {
         super("SmallService");
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
     }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.d("------>", "SmallService onCreate()");
+        Log.d("------>", "【SmallService】onCreate()");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         String small = intent.getStringExtra("small");
-        Log.d("------>", "SmallService onHandleIntent() small: "+small);
+        Log.d("------>", "【SmallService】onHandleIntent() small: "+small);
         switch (small) {
-            case SMALL_CHECK_UPDATE:
-                smallCheckUpdate();
+            case SMALL_CHECK_UPDATE: // 检查更新
+                smallCheckUpdate(URL_UPDATES);
                 break;
-            case SMALL_DOWNLOAD_PLUGINS:
+            case SMALL_CHECK_ADD: // 检查更新
+                smallCheckUpdate(URL_ADDITIONS);
+                break;
+            case SMALL_DOWNLOAD_PLUGINS: // 下载插件
                 smallDownloadPlugins();
                 break;
-            case SMALL_UPDATE_BUNDLES:
+            case SMALL_UPDATE_BUNDLES: // 更新插件
                 smallUpdateBundles();
                 break;
         }
     }
 
-    private static final String URL_BUNDLES = "http://sunfusheng.com/assets/small/bundles.json";
-    private static final String URL_ADDITIONS = "http://sunfusheng.com/assets/small/additions.json";
-
     // Small 插件检查更新
-    private boolean smallCheckUpdate() {
+    private boolean smallCheckUpdate(String urlString) {
         try {
-            URL url = new URL(URL_BUNDLES);
+            URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             StringBuilder sb = new StringBuilder();
             InputStream is = conn.getInputStream();
@@ -84,7 +98,7 @@ public class SmallService extends IntentService {
             String plugin_bundles = sb.toString();
             if (TextUtils.isEmpty(plugin_bundles)) return false;
 
-            Log.d("------>", "plugin_bundles: "+plugin_bundles);
+            Log.d("------>", "【SmallService】plugin_bundles: "+plugin_bundles);
             mSmallEntity = FastJsonUtil.parseJson(plugin_bundles, SmallEntity.class);
             if (mSmallEntity == null) return false;
 
@@ -93,8 +107,11 @@ public class SmallService extends IntentService {
                 Intent intent = new Intent(this, SmallService.class);
                 intent.putExtra("small", SMALL_DOWNLOAD_PLUGINS);
                 startService(intent);
+            } else {
+                sendServiceStatus("插件已是最新版本");
             }
         } catch (Exception e) {
+            sendServiceStatus("检查更新异常");
             e.printStackTrace();
         }
         return true;
@@ -102,20 +119,20 @@ public class SmallService extends IntentService {
 
     // 下载 Small 插件
     private void smallDownloadPlugins() {
-        int count = mPluginEntities.size();
-        String filePath = getFilePathBySDCard() + File.separator;
+        try {
+            int count = mPluginEntities.size();
+            String filePath = getFilePathBySDCard() + File.separator;
 
-        File destDir = new File(filePath);
-        if (!destDir.exists()) {
-            destDir.mkdirs();
-        }
+            File destDir = new File(filePath);
+            if (!destDir.exists()) {
+                destDir.mkdirs();
+            }
 
-        for (int i=0; i<count; i++) {
-            try {
+            for (int i=0; i<count; i++) {
                 PluginEntity pluginEntity = mPluginEntities.get(i);
                 String fileName = getFileNameByUrl(pluginEntity.getUrl());
                 if (TextUtils.isEmpty(fileName)) continue;
-                Log.d("------>", "filePath/fileName: " + filePath + fileName);
+                Log.d("------>", "【SmallService】filePath/fileName: " + filePath + fileName);
 
                 URL url = new URL(pluginEntity.getUrl());
                 HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -129,9 +146,11 @@ public class SmallService extends IntentService {
                 os.flush();
                 os.close();
                 is.close();
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+            sendServiceStatus("下载插件完成，重新启动更新");
+        } catch (Exception e) {
+            sendServiceStatus("下载插件异常");
+            e.printStackTrace();
         }
     }
 
@@ -149,7 +168,7 @@ public class SmallService extends IntentService {
                 JSONObject manifestObject = smallObject.has("manifest") ? smallObject.getJSONObject("manifest") : null;
                 if (manifestObject != null) {
                     Small.updateManifest(manifestObject, false);
-                    Log.d("------>", "更新注册表成功");
+                    Log.d("------>", "【SmallService】更新注册表成功");
                 }
             }
             if (initPluginEntities()) {
@@ -160,7 +179,13 @@ public class SmallService extends IntentService {
                     String fileName = getFileNameByUrl(pluginEntity.getUrl());
                     updateBundleThenDelete(pluginEntity.getPkg(), fileName);
                 }
-                Log.d("------>", "更新插件成功");
+                if (updateManifest) {
+                    getSettingsSharedPreferences().small_add(1);
+                    Log.d("------>", "【SmallService】增加插件成功");
+                } else {
+                    getSettingsSharedPreferences().small_update(1);
+                    Log.d("------>", "【SmallService】更新插件成功");
+                }
             }
             getSettingsSharedPreferences().manifest_code(mSmallEntity.getManifest_code());
             getSettingsSharedPreferences().updates_code(mSmallEntity.getUpdates_code());
@@ -241,7 +266,14 @@ public class SmallService extends IntentService {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        Log.d("------>", "SmallService onDestroy()");
+        Log.d("------>", "【SmallService】onDestroy()");
+    }
+
+    // 发送状态信息
+    private void sendServiceStatus(String status) {
+        Intent intent = new Intent(ACTION_TYPE_STATUS);
+        intent.putExtra("status", status);
+        mLocalBroadcastManager.sendBroadcast(intent);
     }
 
     protected <P> P getSharedPreferences(Class<P> spClass) {
