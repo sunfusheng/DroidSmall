@@ -28,4 +28,5 @@ public class ToastTip {
         }
         mToast.show();
     }
+
 }

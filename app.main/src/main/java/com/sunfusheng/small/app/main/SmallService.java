@@ -66,10 +66,13 @@ public class SmallService extends IntentService {
         }
     }
 
+    private static final String URL_BUNDLES = "http://sunfusheng.com/assets/small/bundles.json";
+    private static final String URL_ADDITIONS = "http://sunfusheng.com/assets/small/additions.json";
+
     // Small 插件检查更新
     private boolean smallCheckUpdate() {
         try {
-            URL url = new URL("http://sunfusheng.com/assets/small/bundles.json");
+            URL url = new URL(URL_BUNDLES);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             StringBuilder sb = new StringBuilder();
             InputStream is = conn.getInputStream();

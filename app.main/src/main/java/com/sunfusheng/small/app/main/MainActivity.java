@@ -2,7 +2,6 @@ package com.sunfusheng.small.app.main;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.view.Menu;
@@ -14,12 +13,6 @@ import com.sunfusheng.small.lib.framework.base.BaseActivity;
 import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
 
 import butterknife.Bind;
 import butterknife.ButterKnife;
@@ -47,13 +40,13 @@ public class MainActivity extends BaseActivity {
     }
 
     private void initData() {
-        Intent intent = new Intent(this, SmallService.class);
-        intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
-        startService(intent);
+//        Intent intent = new Intent(this, SmallService.class);
+//        intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
+//        startService(intent);
     }
 
     private void initView() {
-        initToolBar(toolbar, false, "DroidSmall");
+        initToolBar(toolbar, false, "Android Small 插件化示例");
     }
 
     private void initListener() {
@@ -73,7 +66,7 @@ public class MainActivity extends BaseActivity {
                 Small.openUri("phone", mContext);
                 break;
             case R.id.tv_number:
-                Small.openUri("phone/Number?num=18600604601&toast=Fucking amazing!", mContext);
+                Small.openUri("phone/Number?num=18600604600&toast=Fucking amazing!", mContext);
                 break;
         }
     }
@@ -87,46 +80,17 @@ public class MainActivity extends BaseActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_wether:
-                updatePatchBundle("com.sunfusheng.small.app.weather", "libcom_sunfusheng_small_app_weather.so");
+            case R.id.action_update_plugin:
+                Intent intent = new Intent(this, SmallService.class);
+                intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
+                startService(intent);
                 return true;
-            case R.id.action_phone:
-                updatePatchBundle("com.sunfusheng.small.app.phone", "libcom_sunfusheng_small_app_phone.so");
+            case R.id.action_add_plugin:
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
-    }
-
-    private void updatePatchBundle(final String pkgName, final String fileName) {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    String path = Environment.getExternalStorageDirectory() + "/DroidSmall";
-                    File inFile = new File(path, fileName);
-                    if (!inFile.exists()) return;
-                    net.wequick.small.Bundle bundle = Small.getBundle(pkgName);
-                    File outFile = bundle.getPatchFile();
-
-                    InputStream is = new FileInputStream(inFile);
-                    OutputStream os = new FileOutputStream(outFile);
-
-                    byte[] buffer = new byte[1024];
-                    int length;
-                    while ((length = is.read(buffer)) != -1) {
-                        os.write(buffer, 0, length);
-                    }
-
-                    os.flush();
-                    os.close();
-                    is.close();
-                    bundle.upgrade();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
     }
 
     @Override

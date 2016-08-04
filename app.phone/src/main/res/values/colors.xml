@@ -3,6 +3,6 @@
 
     <color name="phoneColorPrimary">#ba68c8</color>
     <color name="phoneColorPrimaryDark">#ba68c8</color>
-    <color name="phoneColorAccent">#f97b5c</color>
+    <color name="phoneColorAccent">#ba68c8</color>
 
 </resources>

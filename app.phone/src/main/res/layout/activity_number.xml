@@ -10,28 +10,30 @@
 
     <TextView
         style="@style/TvTextViewStyle"
-        android:background="@color/transparent"
-        android:layout_marginTop="20dp"
-        android:text="新版插件，更新成功！"
+        android:background="@color/blue"
+        android:text="恭喜你！插件更新成功！"
+        android:textColor="@color/white"
         android:visibility="gone"/>
 
     <EditText
         android:id="@+id/et_number"
         style="@style/EtEditTextStyle"
-        android:hint="手机号码"
         android:layout_marginTop="20dp"
+        android:hint="手机号码"
         android:maxEms="11"
+        android:paddingLeft="20dp"
         android:text=""/>
 
     <TextView
         android:id="@+id/tv_number"
         style="@style/TvTextViewStyle"
-        android:gravity="center"
+        android:layout_marginTop="20dp"
         android:text="获取手机号码归属地"/>
 
     <TextView
         android:id="@+id/tv_result"
         style="@style/TvTextViewStyle"
+        android:layout_marginTop="10dp"
         android:background="@color/transparent"
         android:text=""/>
 

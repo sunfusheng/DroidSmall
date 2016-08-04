@@ -1,10 +1,10 @@
 package com.sunfusheng.small.lib.framework.proxy.handler;
 
-import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 
+import com.afollestad.materialdialogs.MaterialDialog;
 import com.sunfusheng.small.lib.framework.proxy.MessageArg;
 import com.sunfusheng.small.lib.framework.util.ToastTip;
 
@@ -15,11 +15,15 @@ import java.lang.reflect.Method;
 public abstract class BaseHandler<Re> extends Handler implements IContext {
 
     protected WeakReference<Re> mReference;
-    private ProgressDialog loadingDialog;
+    private MaterialDialog loadingDialog;
 
     public BaseHandler(Re t) {
         mReference = new WeakReference<Re>(t);
-        loadingDialog = new ProgressDialog(getContext());
+        loadingDialog = new MaterialDialog.Builder(getContext())
+                .content("正在加载...")
+                .progress(true, 0)
+                .progressIndeterminateStyle(false)
+                .build();
     }
 
     @Override
@@ -43,12 +47,12 @@ public abstract class BaseHandler<Re> extends Handler implements IContext {
                     switch (msg.arg2) {
                         case 1:
                             loadingDialog.setCanceledOnTouchOutside(false);
-                            loadingDialog.setMessage((CharSequence) msg.obj);
+                            loadingDialog.setContent((CharSequence) msg.obj);
                             loadingDialog.show();
                             break;
                         case 2:
                             loadingDialog.setCanceledOnTouchOutside(true);
-                            loadingDialog.setMessage((CharSequence) msg.obj);
+                            loadingDialog.setContent((CharSequence) msg.obj);
                             loadingDialog.show();
                             break;
                         case 3:

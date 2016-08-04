@@ -3,6 +3,6 @@
 
     <color name="weatherColorPrimary">#ff5555</color>
     <color name="weatherColorPrimaryDark">#ff5555</color>
-    <color name="weatherColorAccent">#f97b5c</color>
+    <color name="weatherColorAccent">#ff5555</color>
 
 </resources>

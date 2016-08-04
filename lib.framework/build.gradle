@@ -35,5 +35,8 @@ dependencies {
     // OkHttp3
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
 
+    // Material Dialogs
+    compile 'com.afollestad.material-dialogs:core:0.8.6.2'
+
     compile project(':lib.style')
 }

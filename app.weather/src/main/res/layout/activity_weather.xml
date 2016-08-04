@@ -10,21 +10,21 @@
 
     <TextView
         style="@style/TvTextViewStyle"
-        android:background="@color/transparent"
-        android:layout_marginTop="20dp"
-        android:text="新版插件，更新成功！"
+        android:background="@color/blue"
+        android:text="恭喜你！插件更新成功！"
+        android:textColor="@color/white"
         android:visibility="gone"/>
 
     <TextView
         android:id="@+id/tv_weather"
         style="@style/TvTextViewStyle"
         android:layout_marginTop="20dp"
-        android:gravity="center"
         android:text="获取北京天气信息"/>
 
     <TextView
         android:id="@+id/tv_result"
         style="@style/TvTextViewStyle"
+        android:layout_marginTop="10dp"
         android:background="@color/transparent"
         android:text=""/>
 

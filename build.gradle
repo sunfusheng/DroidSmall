@@ -22,6 +22,7 @@ apply plugin: 'net.wequick.small'
 
 small {
     aarVersion = '1.0.0'
+    strictSplitResources = false;
 }
 
 task clean(type: Delete) {

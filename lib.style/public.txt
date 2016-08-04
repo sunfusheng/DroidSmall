@@ -19,4 +19,7 @@ int color font_black_5 0x7906000a
 int color font_black_6 0x7906000b
 int color transparent 0x7906000c
 int color white 0x7906000d
+int color blue 0x7906000e
+int color purple 0x7906000f
+int color red 0x79060010
 int id toolbar 0x79070000
