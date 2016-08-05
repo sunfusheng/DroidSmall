@@ -108,6 +108,11 @@ public class MainActivity extends BaseActivity {
                 break;
             case R.id.tv_number:
                 Small.openUri("phone/Number?num=18600604600&toast=Fucking amazing!", mContext);
+
+//                Intent intent = Small.getIntentOfUri("phone/Number", mContext);
+//                intent.putExtra("num", "18600604600");
+//                intent.putExtra("toast", "这样也可以");
+//                startActivity(intent);
                 break;
             case R.id.tv_beijing_weather:
                 Small.openUri("weather", mContext);
