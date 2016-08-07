@@ -65,7 +65,7 @@ Small 插件化调研、学习、示例应用
 http://sunfusheng.com/assets/small/updates.json
 
 增加插件的 Json 数据如下：  
-http://sunfusheng.com/assets/small/updates.json
+http://sunfusheng.com/assets/small/additions.json
 
 ### 我的公众号
 
