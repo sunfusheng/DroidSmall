@@ -47,6 +47,38 @@ Small 插件化调研、学习、示例应用
     setResult(requestCode, intent);  
     建议传递 requestCode，将 requestCode 做为 resultCode 返回。  
     
-## 插件升级
+## 插件升级策略
 
-    测试发现 Small 在前台更新完插件，重新启动 App 新的插件功能才会生效，如果不重新启动插件使用插件功能，会崩掉。
+测试发现 Small 在前台更新完插件，重新启动 App 新的插件功能才会生效，
+如果不重新启动插件而继续使用插件，程序可能会崩掉，可以看出 Small 还不支持热更新。
+
+所以我的策略是App启动时检查是否需要更新插件，这时启动的是 IntentService 服务，IntentService 的优点在这里可以充分显示出来。
+有关 IntentService 的使用请参考[IntentService 示例与详解](http://sunfusheng.com/android/2016/07/01/IntentService.html);
+如果需要更新插件，则再次启动服务，下载最新插件，下载完毕后，服务会自动停止。当退出 App 的启动服务检查是否需要更新插件，
+需要的话将插件合并到宿主包中，再次启动 App 是就可以看到最新的功能啦。
+
+[APK下载地址: http://fir.im/DroidSmall](http://fir.im/DroidSmall)
+
+如果 App 在您手机上崩溃，请联系我，微信号：sfs321.
+
+更新插件的 Json 数据如下：  
+http://sunfusheng.com/assets/small/updates.json
+
+增加插件的 Json 数据如下：  
+http://sunfusheng.com/assets/small/updates.json
+
+### 我的公众号
+
+<img src="/screenshots/微信公众号15.jpg" style="width: 30%;">
+
+### 关于我
+
+个人邮箱：sfsheng0322@126.com
+
+[GitHub主页](https://github.com/sfsheng0322)
+
+[简书主页](http://www.jianshu.com/users/88509e7e2ed1/latest_articles)
+
+[个人博客](http://sunfusheng.com/)
+
+[新浪微博](http://weibo.com/u/3852192525)
