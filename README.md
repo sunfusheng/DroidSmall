@@ -12,19 +12,20 @@ Small 插件化调研、学习、示例应用
 [app.weather](https://github.com/sfsheng0322/DroidSmall/tree/master/app.weather) : 查询北京天气模块  
 [app.shanghai.weather](https://github.com/sfsheng0322/DroidSmall/tree/master/app.shanghai.weather) : 查询上海天气模块  
 
+## 写在前面的话  
 这两年热修复、组件化、插件化很火，火到中国这方面的开源项目遍地开花，例如：屠毅敏的AndroidDynamicLoader、任玉刚的dynamic-load-apk、张勇的DroidPlugin、阿里的AndFix、林光亮的Small等，除了中国这些热修复、插件化的开源项目，你有听过外国的嘛。虽然你可能看过这样的文章《插件化从入门到放弃》，但你是否还看过这样的文章《插件化从放弃到捡起》，尽管应用热修复和插件化坑多、难度高，但我们还是一往情深、纵身向前，因为她的优点远多于她的缺点。
 
-### 插件化在实际开发中的主要好处有：  
+## 插件化在实际开发中的主要好处有：  
 1、团队插件化开发并可以单独编译运行。  
 2、如果插件出问题可以动态更新插件进行补救。  
 3、根据业务需求增加和去掉相关插件。
 
 这半年多我已经尝试应用了阿里的AndFix、张勇的DroidPlugin和林光亮的Small，最终决定在公司的项目中应用Small框架，因为它让开发更轻巧、简单、清晰的与插件无缝结合。下面具体说说Small的使用与相关问题，先看下作者给出的Small最佳实践。
 
-### 基本原则  
+## 基本原则  
 宿主中不要放业务逻辑。只做加载插件以及调起主插件的操作。
 
-### 重构步骤  
+## 重构步骤  
 Android工程的组件一般分为两种：lib组件和application组件。 
 
 #### 拆 `lib.*` ：公共库模块插件  
@@ -37,7 +38,7 @@ Android工程的组件一般分为两种：lib组件和application组件。
 相对独立的业务模块先拆，比如“详情页”、“关于我们”，如果剩下的业务不好拆，先放一个插件里。  
 如果都不好拆，先把全部业务做成一个 app.main 主插件。
 
-### Small的使用与注意  
+## Small的使用与注意  
 Small的具体使用还请参考[GitHub 上 Small 的 Android 应用](https://github.com/wequick/Small/tree/master/Android)。  
 需要注意的是模块的命名：  
 模块命名如：`app.*`，`lib.*`，`web.*`  
@@ -58,13 +59,13 @@ Small的具体使用还请参考[GitHub 上 Small 的 Android 应用](https://gi
         }
     }
 
-### Small框架的源码概括  
+## Small框架的源码概括  
 
 在 GitHub 上 Small/DevSample 下可以看到Small包涵两套源码：  
 buildSrc：组件编译插件，用于打包安卓组件包，包括分离宿主和公共库的类与资源、签名组建包、通过脚本的方式来解决资源冲突等问题。  
 small：核心库，用于加载安卓组件包，包括动态加载类、动态加载资源、通过占坑Activity达到动态注册Activity的效果等。
 
-### 业务模块和库模块的编译命令
+## 业务模块和库模块的编译命令
 
 编译 app.* 模块： ./gradlew buildBundle -q  
 清除 app.* 数据： ./gradlew cleanBundle
@@ -72,7 +73,7 @@ small：核心库，用于加载安卓组件包，包括动态加载类、动态
 编译 lib.* 库： ./gradlew buildLib -q  
 清除 lib.* 数据： ./gradlew cleanLib
 
-### Small应用记录
+## Small应用记录
 
 1、lib.* 与 lib.* 之间不支持资源的引用；app.* 可以引用 lib.* 下的资源。  
 
@@ -100,7 +101,7 @@ small：核心库，用于加载安卓组件包，包括动态加载类、动态
     setResult(requestCode, intent);  
     建议传递 requestCode，将 requestCode 做为 resultCode 返回。  
     
-### 插件升级策略
+## 插件升级策略
 
 测试发现 Small 在前台更新完插件，重新启动 App 新的插件功能才会生效，
 如果不重新启动插件而继续使用插件，程序可能会崩掉，可以看出 Small 还不支持热更新。
