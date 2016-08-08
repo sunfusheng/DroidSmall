@@ -25,9 +25,11 @@ Small 插件化调研、学习、示例应用
 
 1、lib.* 与 lib.* 之间不支持资源的引用；app.* 可以引用 lib.* 下的资源。  
 
-2、如果 lib.* 下资源变化特别是删除资源，也请删掉 lib.* 下 public.txt 资源编号集合。  
+2、如果 lib.* 下资源变化特别是删除资源，也请删掉 lib.* 下 public.txt 资源编号集合。 
 
-3、模块之间跳转有两种方式  
+3、第三方SDK的 meta、Service 等需要在宿主 App 的 manifest 中声明。
+
+4、模块之间跳转有两种方式  
 
     (1). Small.openUri("phone/Number?num=18600604600", mContext);  
     (2). Intent intent = Small.getIntentOfUri("phone/Number", mContext);  
@@ -35,12 +37,12 @@ Small 插件化调研、学习、示例应用
          startActivity(intent);  
          不过第二种方式还有问题（Small稳定版本：0.9）  
          
-4、获取传递的参数也是通过 Small 实现的  
+5、获取传递的参数也是通过 Small 实现的  
 
     Uri uri = Small.getUri(this);  
     String num = uri.getQueryParameter("num");  
     
-5、回传数据简单些不需要 startActivityForResult(Intent intent, int requestCode)，直接返回就好  
+6、回传数据简单些不需要 startActivityForResult(Intent intent, int requestCode)，直接返回就好  
 
     Intent intent = new Intent();  
     intent.putExtra("result", "XXOO");  
@@ -53,7 +55,7 @@ Small 插件化调研、学习、示例应用
 如果不重新启动插件而继续使用插件，程序可能会崩掉，可以看出 Small 还不支持热更新。
 
 所以我的策略是App启动时检查是否需要更新插件，这时启动的是 IntentService 服务，IntentService 的优点在这里可以充分显示出来。
-有关 IntentService 的使用请参考[IntentService 示例与详解](http://sunfusheng.com/android/2016/07/01/IntentService.html);
+有关 IntentService 的使用请参考 [IntentService 示例与详解](http://sunfusheng.com/android/2016/07/01/IntentService.html)。
 如果需要更新插件，则再次启动服务，下载最新插件，下载完毕后，服务会自动停止。当退出 App 的启动服务检查是否需要更新插件，
 需要的话将插件合并到宿主包中，再次启动 App 是就可以看到最新的功能啦。
 
