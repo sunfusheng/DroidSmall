@@ -13,18 +13,24 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package net.wequick.gradle
+package net.wequick.gradle.util
 
-public enum PluginType {
-    Unknown (0),
-    Host    (1),
-    App     (2),
-    Library (3),
-    Asset   (4),
-    Stub    (5)
+public final class Log {
+    public static void header(String text) {
+        print AnsiUtils.yellow("[Small] ")
+        println AnsiUtils.white(text)
+    }
 
-    private int value
-    public PluginType(int value) {
-        this.value = value
+    public static void success(String text) {
+        print String.format('        %-64s', text)
+        println AnsiUtils.green('[  OK  ]')
+    }
+
+    public static void warn(String text) {
+        println AnsiUtils.red(String.format('        %s', text))
+    }
+
+    public static void footer(String text) {
+        println AnsiUtils.white(String.format('        %s', text))
     }
 }

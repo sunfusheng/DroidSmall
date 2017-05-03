@@ -23,59 +23,81 @@ class LibraryPlugin extends AppPlugin {
     }
 
     @Override
-    protected void configureProject() {
-        super.configureProject()
+    protected String getSmallCompileType() {
+        if (rootSmall.isBuildingApps() || rootSmall.isBuildingLibs()) {
+            return 'debugCompile'
+        }
+        return 'compile'
+    }
 
-        if (!isBuildingRelease()) {
-            project.afterEvaluate {
-                // Cause `isBuildingRelease()' return false, at this time, super's
-                // `resolveReleaseDependencies' will not be triggered.
-                // To avoid the `Small' class not found, provided the small jar here.
-                def smallJar = project.fileTree(
-                        dir: rootSmall.preBaseJarDir, include: [SMALL_JAR_PATTERN])
-                project.dependencies.add('provided', smallJar)
+    @Override
+    protected void beforeEvaluate(boolean released) {
+        super.beforeEvaluate(released)
+        if (!released) return
 
-                if (isBuildingApps()) {
-                    // Dependently built by `buildBundle' or `:app.xx:assembleRelease'.
-                    // To avoid transformNative_libsWithSyncJniLibsForRelease task error, skip it.
-                    // FIXME: we'd better figure out why the task failed and fix it
-                    project.preBuild.doLast {
-                        def syncJniTaskName = 'transformNative_libsWithSyncJniLibsForRelease'
-                        if (project.hasProperty(syncJniTaskName)) {
-                            def syncJniTask = project.tasks[syncJniTaskName]
-                            syncJniTask.onlyIf { false }
-                        }
-                        // FIXME: Temporary workaround
-                        def syncLibTaskName = 'transformClassesAndResourcesWithSyncLibJarsForRelease'
-                        if (project.hasProperty(syncLibTaskName)) {
-                            def syncLibTask = project.tasks[syncLibTaskName]
-                            syncLibTask.onlyIf { false }
-                        }
-                    }
-                }
-            }
-            return
+        // Change android plugin from `lib' to `application' dynamically
+        // FIXME: Any better way without edit file?
+
+        if (mBakBuildFile.exists()) {
+            // With `tidyUp', should not reach here
+            throw new Exception("Conflict buildFile, please delete file $mBakBuildFile or " +
+                    "${project.buildFile}")
         }
 
-        project.beforeEvaluate {
-            // Change android plugin from `lib' to `application' dynamically
-            // FIXME: Any better way without edit file?
+        def text = project.buildFile.text.replaceAll(
+                'com\\.android\\.library', 'com.android.application')
+        project.buildFile.renameTo(mBakBuildFile)
+        project.buildFile.write(text)
+    }
 
-            if (mBakBuildFile.exists()) {
-                // With `tidyUp', should not reach here
-                throw new Exception("Conflict buildFile, please delete file $mBakBuildFile or " +
-                        "${project.buildFile}")
-            }
+    @Override
+    protected void afterEvaluate(boolean released) {
+        super.afterEvaluate(released)
 
-            def text = project.buildFile.text.replaceAll(
-                    'com\\.android\\.library', 'com.android.application')
-            project.buildFile.renameTo(mBakBuildFile)
-            project.buildFile.write(text)
-        }
-        project.afterEvaluate {
+        if (released) { //< apply: 'com.android.application'
             // Set application id
             def manifest = new XmlParser().parse(android.sourceSets.main.manifestFile)
             android.defaultConfig.applicationId = manifest.@package
+            mDependentLibProjects.each {
+                project.preBuild.dependsOn "${it.path}:buildLib"
+            }
+        } else { //< apply: 'com.android.library'
+            // Cause `isBuildingRelease()' return false, at this time, super's
+            // `hookJavacTask' will not be triggered. Provided the necessary jars here.
+            getLibraryJars().each {
+                project.dependencies.add('provided', project.files(it))
+            }
+
+            // Resolve the transform tasks
+            project.preBuild.doLast {
+                def ts = project.tasks.withType(TransformTask.class)
+
+                ts.each { t ->
+                    if (t.transform.outputTypes.isEmpty()) return
+                    if (t.transform.scopes.isEmpty()) return
+
+                    def requiredOutput = IntermediateFolderUtils.getContentLocation(
+                            t.streamOutputFolder, 'main',
+                            t.transform.outputTypes, t.transform.scopes,
+                            t.transform.name == 'proguard'? Format.JAR: Format.DIRECTORY) // folders/2000/1f/main
+                    def requiredScope = requiredOutput.parentFile // folders/2000/1f
+                    if (requiredScope.exists()) return
+                    def typesDir = requiredScope.parentFile // folders/2000
+                    if (!typesDir.exists()) return
+
+                    def currentScope = typesDir.listFiles().find { it.isDirectory() }
+                    if (currentScope != requiredScope) {
+                        // Scope conflict!
+                        // This may be caused by:
+                        // - 1. After `buildLib', the `lib.*' module was apply to
+                        //      'com.android.application' and the transform scopes turn to be `1f'.
+                        // - 2. In other way, it was apply to
+                        //      'com.android.library' and the scopes are `3'.
+                        // What we can do is just rename the folder to make consistent.
+                        currentScope.renameTo(requiredScope)
+                    }
+                }
+            }
         }
     }
 
@@ -88,15 +110,6 @@ class LibraryPlugin extends AppPlugin {
 
         project.tasks.remove(project.cleanBundle)
         project.tasks.remove(project.buildBundle)
-
-        if (!isBuildingRelease()) return
-
-        // Add library dependencies for `buildLib', fix issue #65
-        project.afterEvaluate {
-            mDependentLibProjects.each {
-                project.preBuild.dependsOn "${it.path}:buildLib"
-            }
-        }
     }
 
     @Override
@@ -127,6 +140,8 @@ class LibraryPlugin extends AppPlugin {
 
             // Backup R.txt to public.txt
             // FIXME: Create a task for this
+            if (!small.symbolFile.exists())  return
+
             def publicIdsPw = new PrintWriter(small.publicSymbolFile.newWriter(false))
             small.symbolFile.eachLine { s ->
                 if (!s.contains("styleable")) {
@@ -142,7 +157,7 @@ class LibraryPlugin extends AppPlugin {
     protected void tidyUp() {
         super.tidyUp()
         // Restore library module's android plugin to `com.android.library'
-        if (mBakBuildFile.exists()) {
+        if (mBakBuildFile != null && mBakBuildFile.exists()) {
             project.buildFile.delete()
             mBakBuildFile.renameTo(project.buildFile)
         }

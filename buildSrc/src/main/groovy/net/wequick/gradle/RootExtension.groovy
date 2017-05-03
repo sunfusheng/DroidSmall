@@ -34,6 +34,10 @@ public class RootExtension extends BaseExtension {
     private static final String REQUIRED_AAR_VERSION = '1.0.0'
     private static final VersionNumber REQUIRED_AAR_REVISION = VersionNumber.parse(REQUIRED_AAR_VERSION)
 
+    /** The built version of gradle-small plugin */
+    public static final String PLUGIN_VERSION = '1.1.0-alpha2'
+    public static final VersionNumber PLUGIN_REVISION = VersionNumber.parse(PLUGIN_VERSION)
+
     /** 
      * Version of aar net.wequick.small:small
      * default to `gradle-small' plugin version 
@@ -54,6 +58,20 @@ public class RootExtension extends BaseExtension {
      */
     boolean strictSplitResources = true
 
+    /**
+     * The default android version configuration
+     * - compileSdkVersion
+     * - buildToolsVersion
+     * - support library version (AppCompat and etc.)
+     */
+    protected AndroidConfig android
+
+    /**
+     * If <tt>true</tt> build plugins to host assets as *.apk,
+     * otherwise build to host smallLibs as *.so
+     */
+    boolean buildToAssets = false
+
     /** Count of libraries */
     protected int libCount
 
@@ -65,6 +83,15 @@ public class RootExtension extends BaseExtension {
 
     /** Project of host */
     protected Project hostProject
+
+    /** Project of host which are automatically dependent by other bundle modules */
+    protected Set<Project> hostStubProjects
+
+    /** Project of lib.* */
+    protected Set<Project> libProjects
+
+    /** Project of app.* */
+    protected Set<Project> appProjects
 
     /** Directory to output bundles (*.so) */
     protected File outputBundleDir
@@ -87,6 +114,9 @@ public class RootExtension extends BaseExtension {
     private File preLinkAarDir
     private File preLinkJarDir
 
+    protected String mP // the executing gradle project name
+    protected String mT // the executing gradle task name
+
     RootExtension(Project project) {
         super(project)
 
@@ -102,6 +132,29 @@ public class RootExtension extends BaseExtension {
         def preLinkDir = new File(interDir, FD_PRE_LINK)
         preLinkJarDir = new File(preLinkDir, FD_JAR)
         preLinkAarDir = new File(preLinkDir, FD_AAR)
+
+        // Parse gradle task
+        def sp = project.gradle.startParameter
+        def t = sp.taskNames[0]
+        if (t != null) {
+            def p = sp.projectDir
+            def pn = null
+            if (p == null) {
+                if (t.startsWith(':')) {
+                    // gradlew :app.main:assembleRelease
+                    def tArr = t.split(':')
+                    if (tArr.length == 3) { // ['', 'app.main', 'assembleRelease']
+                        pn = tArr[1]
+                        t = tArr[2]
+                    }
+                }
+            } else if (p != project.rootProject.projectDir) {
+                // gradlew -p [project.name] assembleRelease
+                pn = p.name
+            }
+            mP = pn
+            mT = t
+        }
     }
 
     public File getPreBuildDir() {
@@ -134,9 +187,14 @@ public class RootExtension extends BaseExtension {
 
     public String getAarVersion() {
         if (aarVersion == null) {
-            throw new RuntimeException(
-                    'Please specify Small aar version in your root build.gradle:\n' +
-                            "small {\n    aarVersion = '[the_version]'\n}")
+            // Try to use the version of gradle-small plugin
+            if (PLUGIN_REVISION < VersionNumber.parse('1.1.0-alpha2')) {
+                throw new RuntimeException(
+                        'Please specify Small aar version in your root build.gradle:\n' +
+                                "small {\n    aarVersion = '[the_version]'\n}")
+            }
+
+            return PLUGIN_VERSION
         }
 
         if (aarRevision == null) {
@@ -153,5 +211,84 @@ public class RootExtension extends BaseExtension {
         }
 
         return aarVersion
+    }
+
+    Map<String, Set<String>> bundleModules = [:]
+
+    public void bundles(String type, String name) {
+        def modules = bundleModules.get(type)
+        if (modules == null) {
+            modules = new HashSet<String>()
+            bundleModules.put(type, modules)
+        }
+        modules.add(name)
+    }
+
+    public void bundles(String type, names) {
+        def modules = bundleModules.get(type)
+        if (modules == null) {
+            modules = new HashSet<String>()
+            bundleModules.put(type, modules)
+        }
+        modules.addAll(names)
+    }
+
+    /** Check if is building any libs (lib.*) */
+    protected boolean isBuildingLibs() {
+        if (mT == null) return false // no tasks
+
+        if (mP == null) {
+            // ./gradlew buildLib
+            return (mT == 'buildLib')
+        } else {
+            // ./gradlew -p lib.xx aR | ./gradlew :lib.xx:aR
+            return (mP.startsWith('lib.') && (mT == 'assembleRelease' || mT == 'aR'))
+        }
+    }
+
+    /** Check if is building any apps (app.*) */
+    protected boolean isBuildingApps() {
+        if (mT == null) return false // no tasks
+
+        if (mP == null) {
+            // ./gradlew buildBundle
+            return (mT == 'buildBundle')
+        } else {
+            // ./gradlew -p app.xx aR | ./gradlew :app.xx:aR
+            return (mP.startsWith('app.') && (mT == 'assembleRelease' || mT == 'aR'))
+        }
+    }
+
+    protected boolean isLibProject(Project project) {
+        boolean found = false;
+        if (libProjects != null) {
+            found = libProjects.contains(project);
+        }
+        if (!found && hostStubProjects != null) {
+            found = hostStubProjects.contains(project);
+        }
+        return found;
+    }
+
+    protected boolean isLibProject(String name) {
+        boolean found = false;
+        if (libProjects != null) {
+            found = libProjects.find{ it.name == name } != null;
+        }
+        if (!found && hostStubProjects != null) {
+            found = hostStubProjects.find{ it.name == name } != null;
+        }
+        return found;
+    }
+
+    public def android(Closure closure) {
+        android = new AndroidConfig()
+        project.configure(android, closure)
+    }
+
+    class AndroidConfig {
+        int compileSdkVersion
+        String buildToolsVersion
+        String supportVersion
     }
 }

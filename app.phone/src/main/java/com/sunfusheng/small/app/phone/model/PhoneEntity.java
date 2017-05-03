@@ -7,63 +7,98 @@ import java.io.Serializable;
  */
 public class PhoneEntity implements Serializable {
 
-    private int errNum;
-    private String retMsg;
-    private RetDataEntity retData;
+    private int error_code;
+    private String reason;
+    private ResultEntity result;
 
-    public void setErrNum(int errNum) {
-        this.errNum = errNum;
+    public int getError_code() {
+        return error_code;
     }
 
-    public void setRetMsg(String retMsg) {
-        this.retMsg = retMsg;
+    public void setError_code(int error_code) {
+        this.error_code = error_code;
     }
 
-    public void setRetData(RetDataEntity retData) {
-        this.retData = retData;
+    public String getReason() {
+        return reason;
     }
 
-    public int getErrNum() {
-        return errNum;
+    public void setReason(String reason) {
+        this.reason = reason;
     }
 
-    public String getRetMsg() {
-        return retMsg;
+    public ResultEntity getResult() {
+        return result;
     }
 
-    public RetDataEntity getRetData() {
-        return retData;
+    public void setResult(ResultEntity result) {
+        this.result = result;
     }
 
-    public static class RetDataEntity {
+    public static class ResultEntity {
 
-        private String telString;
         private String province;
-        private String carrier;
+        private String city;
+        private String areacode;
+        private String zip;
+        private String company;
+        private String phone;
+        private String card;
 
-        public void setTelString(String telString) {
-            this.telString = telString;
+        public String getProvince() {
+            return province;
         }
 
         public void setProvince(String province) {
             this.province = province;
         }
 
-        public void setCarrier(String carrier) {
-            this.carrier = carrier;
+        public String getCity() {
+            return city;
         }
 
-        public String getTelString() {
-            return telString;
+        public void setCity(String city) {
+            this.city = city;
         }
 
-        public String getProvince() {
-            return province;
+        public String getAreacode() {
+            return areacode;
         }
 
-        public String getCarrier() {
-            return carrier;
+        public void setAreacode(String areacode) {
+            this.areacode = areacode;
         }
 
+        public String getZip() {
+            return zip;
+        }
+
+        public void setZip(String zip) {
+            this.zip = zip;
+        }
+
+        public String getCompany() {
+            return company;
+        }
+
+        public void setCompany(String company) {
+            this.company = company;
+        }
+
+        public String getPhone() {
+            return phone;
+        }
+
+        public void setPhone(String phone) {
+            this.phone = phone;
+        }
+
+        public String getCard() {
+            return card;
+        }
+
+        public void setCard(String card) {
+            this.card = card;
+        }
     }
 }

@@ -11,16 +11,16 @@ import com.sunfusheng.small.app.shanghai.weather.model.CityWeatherDataEntity;
 import com.sunfusheng.small.app.shanghai.weather.model.CityWeatherEntity;
 import com.sunfusheng.small.lib.framework.base.BaseActivity;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class ShanghaiWeatherActivity extends BaseActivity<SingleControl> {
 
-    @Bind(R.id.tv_weather)
+    @BindView(R.id.tv_weather)
     TextView tvWeather;
-    @Bind(R.id.tv_result)
+    @BindView(R.id.tv_result)
     TextView tvResult;
-    @Bind(R.id.toolbar)
+    @BindView(R.id.toolbar)
     Toolbar toolbar;
 
     @Override

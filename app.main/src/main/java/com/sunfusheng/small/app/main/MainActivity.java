@@ -18,24 +18,24 @@ import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
-public class MainActivity extends BaseActivity {
+public class MainActivity extends BaseActivity implements View.OnClickListener {
 
-    @Bind(R.id.tv_weather)
-    TextView tvWeather;
-    @Bind(R.id.tv_phone)
-    TextView tvPhone;
-    @Bind(R.id.tv_number)
-    TextView tvNumber;
-    @Bind(R.id.tv_status)
-    TextView tvStatus;
-    @Bind(R.id.toolbar)
+    @BindView(R.id.toolbar)
     Toolbar toolbar;
-    @Bind(R.id.tv_beijing_weather)
+    @BindView(R.id.tv_status)
+    TextView tvStatus;
+    @BindView(R.id.tv_phone)
+    TextView tvPhone;
+    @BindView(R.id.tv_number)
+    TextView tvNumber;
+    @BindView(R.id.tv_weather)
+    TextView tvWeather;
+    @BindView(R.id.tv_beijing_weather)
     TextView tvBeijingWeather;
-    @Bind(R.id.tv_shanghai_weather)
+    @BindView(R.id.tv_shanghai_weather)
     TextView tvShanghaiWeather;
 
     private LocalBroadcastManager mLocalBroadcastManager;
@@ -53,7 +53,7 @@ public class MainActivity extends BaseActivity {
     }
 
     private void initData() {
-        mLocalBroadcastManager = LocalBroadcastManager.getInstance(mContext);
+        mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         mBroadcastReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(SmallService.ACTION_TYPE_STATUS);
@@ -98,16 +98,15 @@ public class MainActivity extends BaseActivity {
 
     @Override
     public void onClick(View v) {
-        super.onClick(v);
         switch (v.getId()) {
             case R.id.tv_weather:
-                Small.openUri("weather", mContext);
+                Small.openUri("weather", this);
                 break;
             case R.id.tv_phone:
-                Small.openUri("phone", mContext);
+                Small.openUri("phone", this);
                 break;
             case R.id.tv_number:
-                Small.openUri("phone/Number?num=18600604600&toast=Fucking amazing!", mContext);
+                Small.openUri("phone/Number?num=18600604600&toast=Fucking amazing!", this);
 
 //                Intent intent = Small.getIntentOfUri("phone/Number", mContext);
 //                intent.putExtra("num", "18600604600");
@@ -115,10 +114,10 @@ public class MainActivity extends BaseActivity {
 //                startActivity(intent);
                 break;
             case R.id.tv_beijing_weather:
-                Small.openUri("weather", mContext);
+                Small.openUri("weather", this);
                 break;
             case R.id.tv_shanghai_weather:
-                Small.openUri("shanghai.weather", mContext);
+                Small.openUri("shanghai.weather", this);
                 break;
         }
     }

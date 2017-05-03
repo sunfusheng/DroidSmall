@@ -26,10 +26,10 @@ public class HttpApi implements UrlManager {
     }
 
     // 手机号码归属地
-    public PhoneEntity getPhoneLocation(String tel) throws IOException, com.alibaba.fastjson.JSONException, org.json.JSONException {
+    public PhoneEntity getPhoneLocation(String phone) throws IOException, com.alibaba.fastjson.JSONException, org.json.JSONException {
         return OkHttpProxy.get().url(URL_PHONE_NUM_PLACE)
-                .addHeader("apikey", APISTORE_API_KEY)
-                .addParams("tel", tel)
+                .addParams("key", API_KEY)
+                .addParams("phone", phone)
                 .build()
                 .execute(PhoneEntity.class);
     }

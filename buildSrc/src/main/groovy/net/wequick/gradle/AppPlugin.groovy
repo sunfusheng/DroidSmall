@@ -20,16 +20,27 @@ import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.pipeline.IntermediateFolderUtils
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.ProGuardTransform
+import com.android.build.gradle.tasks.ProcessTestManifest
 import com.android.build.gradle.tasks.MergeManifests
+import com.android.build.gradle.tasks.MergeSourceSetFolders
 import com.android.build.gradle.tasks.ProcessAndroidResources
+
+import com.android.sdklib.BuildToolInfo
 import groovy.io.FileType
 import net.wequick.gradle.aapt.Aapt
 import net.wequick.gradle.aapt.SymbolParser
 import net.wequick.gradle.transform.StripAarTransform
+import net.wequick.gradle.util.AarPath
+import net.wequick.gradle.util.ClassFileUtils
 import net.wequick.gradle.util.JNIUtils
+import net.wequick.gradle.util.Log
+import net.wequick.gradle.util.ZipUtils
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.DependencySet
 import org.gradle.api.artifacts.ResolvedDependency
+import org.gradle.api.file.FileTree
+import org.gradle.api.internal.artifacts.dependencies.DefaultProjectDependency
 import org.gradle.api.tasks.compile.JavaCompile
 
 class AppPlugin extends BundlePlugin {
@@ -39,6 +50,10 @@ class AppPlugin extends BundlePlugin {
     protected static def sPackageIds = [:] as LinkedHashMap<String, Integer>
 
     protected Set<Project> mDependentLibProjects
+    protected Set<Project> mTransitiveDependentLibProjects
+    protected Set<Project> mProvidedProjects
+    protected Set<Project> mCompiledProjects
+    protected Set<Map> mUserLibAars
     protected Set<File> mLibraryJars
     protected File mMinifyJar
 
@@ -67,39 +82,56 @@ class AppPlugin extends BundlePlugin {
     }
 
     @Override
-    protected void configureProject() {
-        super.configureProject()
+    protected void afterEvaluate(boolean released) {
+        super.afterEvaluate(released)
 
-        project.afterEvaluate {
-            // Get all dependencies with gradle script `compile project(':lib.*')'
-            def libs = project.configurations.compile.dependencies.findAll {
-                it.hasProperty('dependencyProject') &&
-                        it.dependencyProject.name.startsWith('lib.')
-            }
-            mDependentLibProjects = libs.collect { it.dependencyProject }
-            if (isBuildingLibs()) {
-                // While building libs, `lib.*' modules are changing to be an application
-                // module and cannot be depended by any other modules. To avoid warnings,
-                // remove the `compile project(':lib.*')' dependencies temporary.
-                project.configurations.compile.dependencies.removeAll(libs)
+        // Initialize a resource package id for current bundle
+        initPackageId()
+
+        // Get all dependencies with gradle script `compile project(':lib.*')'
+        DependencySet compilesDependencies = project.configurations.compile.dependencies
+        Set<DefaultProjectDependency> allLibs = compilesDependencies.withType(DefaultProjectDependency.class)
+        Set<DefaultProjectDependency> smallLibs = []
+        mUserLibAars = []
+        mDependentLibProjects = []
+        mProvidedProjects = []
+        mCompiledProjects = []
+        allLibs.each {
+            if (rootSmall.isLibProject(it.dependencyProject)) {
+                smallLibs.add(it)
+                mProvidedProjects.add(it.dependencyProject)
+                mDependentLibProjects.add(it.dependencyProject)
+            } else {
+                mCompiledProjects.add(it.dependencyProject)
+                collectAarsOfLibrary(it.dependencyProject, mUserLibAars)
             }
         }
+        collectAarsOfLibrary(project, mUserLibAars)
+        mProvidedProjects.addAll(rootSmall.hostStubProjects)
 
-        if (!isBuildingRelease()) return
-
-        project.afterEvaluate {
-            // Add custom transformation to split shared libraries
-            android.registerTransform(new StripAarTransform())
-
-            initPackageId()
-            resolveReleaseDependencies()
+        if (rootSmall.isBuildingLibs()) {
+            // While building libs, `lib.*' modules are changing to be an application
+            // module and cannot be depended by any other modules. To avoid warnings,
+            // remove the `compile project(':lib.*')' dependencies temporary.
+            compilesDependencies.removeAll(smallLibs)
         }
+
+        if (!released) return
+
+        // Add custom transformation to split shared libraries
+        android.registerTransform(new StripAarTransform())
+
+        resolveReleaseDependencies()
     }
 
     protected static def getJarName(Project project) {
         def group = project.group
         if (group == project.rootProject.name) group = project.name
         return "$group-${project.version}.jar"
+    }
+
+    protected static Set<File> getJarDependencies(Project project) {
+        return project.fileTree(dir: 'libs', include: '*.jar').asList()
     }
 
     protected Set<File> getLibraryJars() {
@@ -113,14 +145,41 @@ class AppPlugin extends BundlePlugin {
 
         // Collect the jars of `compile project(lib.*)' with absolute file path, fix issue #65
         Set<String> libJarNames = []
-        mDependentLibProjects.each {
+        Set<File> libDependentJars = []
+        mTransitiveDependentLibProjects.each {
             libJarNames += getJarName(it)
+            libDependentJars += getJarDependencies(it)
         }
+
         if (libJarNames.size() > 0) {
             def libJars = project.files(libJarNames.collect{
                 new File(rootSmall.preLibsJarDir, it).path
             })
             mLibraryJars.addAll(libJars.files)
+        }
+
+        mLibraryJars.addAll(libDependentJars)
+
+        // Collect stub and small jars in host
+        Set<Project> sharedProjects = []
+        sharedProjects.addAll(rootSmall.hostStubProjects)
+        if (rootSmall.smallProject != null) {
+            sharedProjects.add(rootSmall.smallProject)
+        }
+        sharedProjects.each {
+            def jarTask = it.tasks.withType(TransformTask.class).find {
+                it.variantName == 'release' && it.transform.name == 'syncLibJars'
+            }
+            if (jarTask != null) {
+                mLibraryJars.addAll(jarTask.otherFileOutputs)
+            }
+        }
+
+        rootSmall.hostProject.tasks.withType(TransformTask.class).each {
+            if ((it.variantName == 'release' || it.variantName.contains("Release"))
+                    && (it.transform.name == 'dex' || it.transform.name == 'proguard')) {
+                mLibraryJars.addAll(it.streamInputs.findAll { it.name.endsWith('.jar') })
+            }
         }
 
         return mLibraryJars
@@ -139,45 +198,86 @@ class AppPlugin extends BundlePlugin {
                 compile.exclude group: module[0], module: module[1]
             }
         }
-
-        // Check if dependents by appcompat library which contains theme resource and
-        // cannot be pre-split
-        def appcompat = compile.dependencies.find {
-            it.group.equals('com.android.support') && it.name.startsWith('appcompat')
-        }
-        if (appcompat == null) {
-            // Pre-split classes and resources.
-            project.rootProject.small.preApDir.listFiles().each {
-                android.aaptOptions.additionalParameters '-I', it.path
-            }
-            // Ensure generating text symbols - R.txt
-            project.preBuild.doLast {
-                def symbolsPath = project.processReleaseResources.textSymbolOutputDir.path
-                android.aaptOptions.additionalParameters '--output-text-symbols',
-                        symbolsPath
-            }
-        }
     }
 
     @Override
-    protected void configureDebugVariant(BaseVariant variant) {
-        super.configureDebugVariant(variant)
-
-        if (pluginType != PluginType.App) return
+    protected void hookPreDebugBuild() {
+        super.hookPreDebugBuild()
 
         // If an app.A dependent by lib.B and both of them declare application@name in their
         // manifests, the `processManifest` task will raise a conflict error. To avoid this,
         // modify the lib.B manifest to remove the attributes before app.A `processManifest`
         // and restore it after the task finished.
-        Task processDebugManifest = project.tasks["process${variant.name.capitalize()}Manifest"]
-        processDebugManifest.doFirst { MergeManifests it ->
-            def libs = it.libraries
-            def libManifests = []
-            libs.each {
-                if (it.name.contains(':lib.')) {
-                    libManifests.add(it.manifest)
-                }
+
+        // processDebugManifest
+        project.tasks.withType(MergeManifests.class).each {
+            if (it.variantName.startsWith('release')) return
+
+            if (it.hasProperty('providers')) {
+                it.providers = []
+                return
             }
+
+            hookProcessDebugManifest(it, it.libraries)
+        }
+
+        // processDebugAndroidTestManifest
+        project.tasks.withType(ProcessTestManifest.class).each {
+            if (it.variantName.startsWith('release')) return
+
+            if (it.hasProperty('providers')) {
+                it.providers = []
+                return
+            }
+
+            hookProcessDebugManifest(it, it.libraries)
+        }
+    }
+
+    protected void collectLibManifests(def lib, Set outFiles) {
+        outFiles.add(lib.getManifest())
+
+        if (lib.hasProperty("libraryDependencies")) {
+            // >= 2.2.0
+            lib.getLibraryDependencies().each {
+                collectLibManifests(it, outFiles)
+            }
+        } else {
+            // < 2.2.0
+            lib.getManifestDependencies().each {
+                collectLibManifests(it, outFiles)
+            }
+        }
+    }
+
+    protected void hookProcessDebugManifest(Task processDebugManifest,
+                                            List libs) {
+        if (processDebugManifest.hasProperty('providers')) {
+            processDebugManifest.providers = []
+            return
+        }
+
+        processDebugManifest.doFirst {
+            def libManifests = new HashSet<File>()
+            libs.each {
+                def components = it.name.split(':') // e.g. 'Sample:lib.style:unspecified'
+                if (components.size() != 3) return
+
+                def projectName = components[1]
+                if (!rootSmall.isLibProject(projectName)) return
+
+                Set<File> allManifests = new HashSet<File>()
+                collectLibManifests(it, allManifests)
+
+                libManifests.addAll(allManifests.findAll {
+                    // e.g.
+                    // '**/Sample/lib.style/unspecified/AndroidManifest.xml
+                    // '**/Sample/lib.analytics/unspecified/AndroidManifest.xml
+                    def name = it.parentFile.parentFile.name
+                    rootSmall.isLibProject(name)
+                })
+            }
+
             def filteredManifests = []
             libManifests.each { File manifest ->
                 def sb = new StringBuilder()
@@ -289,22 +389,24 @@ class AppPlugin extends BundlePlugin {
 
         // Add reference libraries
         proguard.doFirst {
-            getLibraryJars().each {
+            getLibraryJars().findAll{ it.exists() }.each {
                 // FIXME: the `libraryJar' method is protected, may be depreciated
                 pt.libraryJar(it)
             }
         }
         // Split R.class
         proguard.doLast {
-            Log.success("[$project.name] Strip aar classes...")
-
-            if (small.splitRJavaFile == null) return
+            if (small.splitRJavaFile == null || !small.splitRJavaFile.exists()) {
+                return
+            }
 
             def minifyJar = IntermediateFolderUtils.getContentLocation(
                     proguard.streamOutputFolder, 'main', pt.outputTypes, pt.scopes, Format.JAR)
             if (!minifyJar.exists()) return
 
             mMinifyJar = minifyJar // record for `LibraryPlugin'
+
+            Log.success("[$project.name] Strip aar classes...")
 
             // Unpack the minify jar to split the R.class
             File unzipDir = new File(minifyJar.parentFile, 'main')
@@ -337,7 +439,7 @@ class AppPlugin extends BundlePlugin {
     }
 
     /** Collect the vendor aars (has resources) compiling in current bundle */
-    protected void collectVendorAars(Set<Map> outFirstLevelAars,
+    protected void collectVendorAars(Set<ResolvedDependency> outFirstLevelAars,
                                      Set<Map> outTransitiveAars) {
         project.configurations.compile.resolvedConfiguration.firstLevelModuleDependencies.each {
             collectVendorAars(it, outFirstLevelAars, outTransitiveAars)
@@ -345,7 +447,7 @@ class AppPlugin extends BundlePlugin {
     }
 
     protected boolean collectVendorAars(ResolvedDependency node,
-                                        Set<Map> outFirstLevelAars,
+                                        Set<ResolvedDependency> outFirstLevelAars,
                                         Set<Map> outTransitiveAars) {
         def group = node.moduleGroup,
             name = node.moduleName,
@@ -365,12 +467,12 @@ class AppPlugin extends BundlePlugin {
         }
 
         def path = "$group/$name/$version"
-        def aar = [path: path, name: node.name]
+        def aar = [path: path, name: node.name, version: version]
         def resDir = new File(small.aarDir, "$path/res")
         // If the dependency has resources, collect it
         if (resDir.exists() && resDir.list().size() > 0) {
-            if (outFirstLevelAars != null && !outFirstLevelAars.contains(aar)) {
-                outFirstLevelAars.add(aar)
+            if (outFirstLevelAars != null && !outFirstLevelAars.contains(node)) {
+                outFirstLevelAars.add(node)
             }
             if (!outTransitiveAars.contains(aar)) {
                 outTransitiveAars.add(aar)
@@ -388,10 +490,24 @@ class AppPlugin extends BundlePlugin {
         }
         if (!flag) return false
 
-        if (outFirstLevelAars != null && !outFirstLevelAars.contains(aar)) {
-            outFirstLevelAars.add(aar)
+        if (outFirstLevelAars != null && !outFirstLevelAars.contains(node)) {
+            outFirstLevelAars.add(node)
         }
         return true
+    }
+
+    protected void collectTransitiveAars(ResolvedDependency node,
+                                         Set<ResolvedDependency> outAars) {
+        def group = node.moduleGroup,
+            name = node.moduleName
+
+        if (small.splitAars.find { aar -> group == aar.group && name == aar.name } == null) {
+            outAars.add(node)
+        }
+
+        node.children.each {
+            collectTransitiveAars(it, outAars)
+        }
     }
 
     /**
@@ -402,7 +518,7 @@ class AppPlugin extends BundlePlugin {
         if (!idsFile.exists()) return
 
         // Check if has any vendor aars
-        def firstLevelVendorAars = [] as Set<Map>
+        def firstLevelVendorAars = [] as Set<ResolvedDependency>
         def transitiveVendorAars = [] as Set<Map>
         collectVendorAars(firstLevelVendorAars, transitiveVendorAars)
         if (firstLevelVendorAars.size() > 0) {
@@ -418,18 +534,38 @@ class AppPlugin extends BundlePlugin {
                 err.append('    }')
                 throw new UnsupportedOperationException(err.toString())
             } else {
-                def aars = firstLevelVendorAars.collect{ it.name }.join('; ')
-                Log.warn("Using vendor aar(s): $aars")
+                Set<ResolvedDependency> reservedAars = new HashSet<>()
+                firstLevelVendorAars.each {
+                    Log.warn("Using vendor aar '$it.name'")
+
+                    // If we don't split the aar then we should reserved all it's transitive aars.
+                    collectTransitiveAars(it, reservedAars)
+                }
+                reservedAars.each {
+                    mUserLibAars.add(group: it.moduleGroup, name: it.moduleName, version: it.moduleVersion)
+                }
             }
         }
 
-        // Prepare id maps (bundle resource id -> library resource id)
-        def libEntries = [:]
-        rootSmall.preIdsDir.listFiles().each {
-            if (it.name.endsWith('R.txt') && !it.name.startsWith(project.name)) {
-                libEntries += SymbolParser.getResourceEntries(it)
-            }
+        // Add user retained aars for generating their R.java, fix #194
+        if (small.retainedAars != null) {
+            transitiveVendorAars.addAll(small.retainedAars.collect {
+                [path: "$it.group/$it.name/$it.version", version: it.version]
+            })
         }
+
+        // Prepare id maps (bundle resource id -> library resource id)
+        // Map to `lib.**` resources id first, and then the host one.
+        def libEntries = [:]
+        File hostSymbol = new File(rootSmall.preIdsDir, "${rootSmall.hostModuleName}-R.txt")
+        if (hostSymbol.exists()) {
+            libEntries += SymbolParser.getResourceEntries(hostSymbol)
+        }
+        mTransitiveDependentLibProjects.each {
+            File libSymbol = new File(it.projectDir, 'public.txt')
+            libEntries += SymbolParser.getResourceEntries(libSymbol)
+        }
+
         def publicEntries = SymbolParser.getResourceEntries(small.publicSymbolFile)
         def bundleEntries = SymbolParser.getResourceEntries(idsFile)
         def staticIdMaps = [:]
@@ -477,17 +613,21 @@ class AppPlugin extends BundlePlugin {
 
         // TODO: retain deleted public entries
         if (publicEntries.size() > 0) {
-            publicEntries.each { k, e ->
-                e._typeId = e.typeId
-                e._entryId = e.entryId
-                e.entryId = Aapt.ID_DELETED
+            throw new RuntimeException("No support deleting resources on lib.* now!\n" +
+                    "  - ${publicEntries.keySet().join(", ")}\n" +
+                    "see https://github.com/wequick/Small/issues/53 for more information.")
 
-                def re = retainedPublicEntries.find{it.type == e.type}
-                e.typeId = (re != null) ? re.typeId : Aapt.ID_DELETED
-            }
-            publicEntries.each { k, e ->
-                retainedPublicEntries.add(e)
-            }
+//            publicEntries.each { k, e ->
+//                e._typeId = e.typeId
+//                e._entryId = e.entryId
+//                e.entryId = Aapt.ID_DELETED
+//
+//                def re = retainedPublicEntries.find{it.type == e.type}
+//                e.typeId = (re != null) ? re.typeId : Aapt.ID_DELETED
+//            }
+//            publicEntries.each { k, e ->
+//                retainedPublicEntries.add(e)
+//            }
         }
         if (retainedEntries.size() == 0 && retainedPublicEntries.size() == 0) {
             small.retainedTypes = [] // Doesn't have any resources
@@ -658,25 +798,104 @@ class AppPlugin extends BundlePlugin {
         }
         allStyleables.addAll(retainedStyleables)
 
-        // Collect vendor types and styleables if needed
-        def vendorEntries = [:]
-        def vendorStyleableKeys = [:]
+        // Collect vendor types and styleables
+        def vendorEntries = new HashMap<String, HashSet<SymbolParser.Entry>>()
+        def vendorStyleableKeys = new HashMap<String, HashSet<String>>()
         transitiveVendorAars.each { aar ->
             String path = aar.path
-            File dir = new File(small.aarDir, path)
-            File vendorIdsFile = new File(dir, 'R.txt')
-            def entries = []
-            def styleables = []
+            File aarPath = new File(small.aarDir, path)
+            String resPath = new File(aarPath, 'res').absolutePath
+            File symbol = new File(aarPath, 'R.txt')
+            Set<SymbolParser.Entry> resTypeEntries = new HashSet<>()
+            Set<String> resStyleableKeys = new HashSet<>()
 
-            SymbolParser.collectResourceKeys(vendorIdsFile, entries, styleables)
+            // Collect the resource entries declared in the aar res directory
+            // This is all the arr's own resource: `R.layout.*', `R.string.*' and etc.
+            collectReservedResourceKeys(aar.version, resPath, resTypeEntries, resStyleableKeys)
 
-            vendorEntries.put(path, entries)
-            vendorStyleableKeys.put(path, styleables)
+            // Collect the id entries for the aar, fix #230
+            // This is all the aar id references: `R.id.*'
+            def idEntries = []
+            def libIdKeys = []
+            libEntries.each { k, v ->
+                if (v.type == 'id') {
+                    libIdKeys.add(v.key)
+                }
+            }
+            SymbolParser.collectResourceKeys(symbol, 'id', libIdKeys, idEntries, null)
+            resTypeEntries.addAll(idEntries)
+
+            // Collect the resource references from *.class
+            // This is all the aar coding-referent fields: `R.*.*'
+            // We had to parse this cause the aar maybe referenced to the other external aars like
+            // `AppCompat' and so on, so that we should keep those external `R.*.*' for current aar.
+            // Fix issue #271.
+            File jar = new File(aarPath, 'jars/classes.jar')
+            if (jar.exists()) {
+                def codedTypeEntries = []
+                def codedStyleableKeys = []
+
+                File aarSymbolsDir = new File(small.aarDir.parentFile, 'small-symbols')
+                File refDir = new File(aarSymbolsDir, path)
+                File refFile = new File(refDir, 'R.txt')
+                if (refFile.exists()) {
+                    // Parse from file
+                    SymbolParser.collectAarResourceKeys(refFile, codedTypeEntries, codedStyleableKeys)
+                } else {
+                    // Parse classes
+                    if (!refDir.exists()) refDir.mkdirs()
+
+                    File unzipDir = new File(refDir, 'classes')
+                    project.copy {
+                        from project.zipTree(jar)
+                        into unzipDir
+                    }
+                    Set<Map> resRefs = []
+                    unzipDir.eachFileRecurse(FileType.FILES, {
+                        if (!it.name.endsWith('.class')) return
+
+                        ClassFileUtils.collectResourceReferences(it, resRefs)
+                    })
+
+                    // TODO: read the aar package name once and store
+                    File manifestFile = new File(aarPath, 'AndroidManifest.xml')
+                    def manifest = new XmlParser().parse(manifestFile)
+                    String aarPkg = manifest.@package.replaceAll('\\.', '/')
+
+                    def pw = new PrintWriter(new FileWriter(refFile))
+                    resRefs.each {
+                        if (it.pkg != aarPkg) {
+                            println "Unresolved refs: $it.pkg/$it.type/$it.name for $aarPkg"
+                            return
+                        }
+
+                        def type = it.type
+                        def name = it.name
+                        def key = "$type/$name"
+                        if (type == 'styleable') {
+                            codedStyleableKeys.add(type)
+                        } else {
+                            codedTypeEntries.add(new SymbolParser.Entry(type, name))
+                        }
+                        pw.println key
+                    }
+                    pw.flush()
+                    pw.close()
+                }
+
+                resTypeEntries.addAll(codedTypeEntries)
+                resStyleableKeys.addAll(codedStyleableKeys)
+            }
+
+            vendorEntries.put(path, resTypeEntries)
+            vendorStyleableKeys.put(path, resStyleableKeys)
         }
 
-        def vendorTypes = [:]
+        def vendorTypes = new HashMap<String, List<Map>>()
         def vendorStyleables = [:]
         vendorEntries.each { name, es ->
+            if (es.isEmpty()) return
+
             allTypes.each { t ->
                 t.entries.each { e ->
                     def ve = es.find { it.type == t.name && it.name == e.name }
@@ -700,6 +919,8 @@ class AppPlugin extends BundlePlugin {
             }
         }
         vendorStyleableKeys.each { name, vs ->
+            if (vs.isEmpty()) return
+
             allStyleables.each { s ->
                 if (vs.contains(s.key)) {
                     if (vendorStyleables[name] == null) {
@@ -728,12 +949,18 @@ class AppPlugin extends BundlePlugin {
 
         def jniDirs = android.sourceSets.main.jniLibs.srcDirs
         if (jniDirs == null) jniDirs = []
+
         // Collect ABIs from AARs
-        small.explodeAarDirs.each { dir ->
-            File jniDir = new File(dir, 'jni')
-            if (!jniDir.exists()) return
-            jniDirs.add(jniDir)
+        def mergeJniLibsTask = project.tasks.withType(TransformTask.class).find {
+            it.variantName == 'release' && it.transform.name == 'mergeJniLibs'
         }
+        if (mergeJniLibsTask != null) {
+            jniDirs.addAll(mergeJniLibsTask.streamInputs.findAll {
+                it.isDirectory() && !shouldStripInput(it)
+            })
+        }
+
+        // Filter ABIs
         def filters = android.defaultConfig.ndkConfig.abiFilters
         jniDirs.each { dir ->
             dir.listFiles().each { File d ->
@@ -750,8 +977,18 @@ class AppPlugin extends BundlePlugin {
         return JNIUtils.getABIFlag(abis)
     }
 
+    protected boolean shouldStripInput(File input) {
+        AarPath aarPath = new AarPath(input)
+        for (aar in small.splitAars) {
+            if (aarPath.explodedFromAar(aar)) {
+                return true
+            }
+        }
+        return false
+    }
+
     protected void hookVariantTask(BaseVariant variant) {
-        collectDependentAars()
+        hookMergeAssets(variant.mergeAssets)
 
         hookProcessManifest(small.processManifest)
 
@@ -759,42 +996,158 @@ class AppPlugin extends BundlePlugin {
 
         hookJavac(small.javac, variant.buildType.minifyEnabled)
 
+        def mergeJniLibsTask = project.tasks.withType(TransformTask.class).find {
+            it.transform.name == 'mergeJniLibs' && it.variantName == variant.name
+        }
+        hookMergeJniLibs(mergeJniLibsTask)
+
         // Hook clean task to unset package id
         project.clean.doLast {
             sPackageIds.remove(project.name)
         }
     }
 
-    /** Hook preBuild task to resolve dependent AARs */
-    private def collectDependentAars() {
-        project.preBuild.doFirst {
-            def smallLibAars = new HashSet() // the aars compiled in host or lib.*
-            rootSmall.preLinkAarDir.listFiles().each { file ->
-                if (!file.name.endsWith('D.txt')) return
-                if (file.name.startsWith(project.name)) return
+    /**
+     * Hook merge-jniLibs task to ignores the lib.* native libraries
+     * TODO: filter the native libraries while exploding aar
+     */
+    def hookMergeJniLibs(TransformTask t) {
+        stripAarFiles(t, { splitPaths ->
+            t.streamInputs.each {
+                if (shouldStripInput(it)) {
+                    splitPaths.add(it)
+                }
+            }
+        })
+    }
 
-                file.eachLine { line ->
-                    def module = line.split(':')
-                    if (module.size() == 3) {
-                        smallLibAars.add(group: module[0], name: module[1], version: module[2])
-                    } else {
-                        // If using local aar, the version may be unspecific
-                        smallLibAars.add(group: module[0], name: module[1], version: '')
+    /**
+     * Hook merge-assets task to ignores the lib.* assets
+     * TODO: filter the assets while exploding aar
+     */
+    private void hookMergeAssets(MergeSourceSetFolders t) {
+        stripAarFiles(t, { paths ->
+            t.inputDirectorySets.each {
+                if (it.configName == 'main' || it.configName == 'release') return
+
+                it.sourceFiles.each {
+                    if (shouldStripInput(it)) {
+                        paths.add(it)
                     }
                 }
             }
-            def userLibAars = new HashSet() // user modules who's name are not in Small way - `*.*'
-            project.rootProject.subprojects {
-                if (it.name.startsWith('lib.')) {
-                    smallLibAars.add(group: it.group, name: it.name, version: it.version)
-                } else if (it.name != rootSmall.hostModuleName
-                        && it.name != 'small' && it.name.indexOf('.') < 0) {
-                    userLibAars.add(group: it.group, name: it.name, version: it.version)
-                }
-            }
+        })
+    }
 
-            small.splitAars = smallLibAars
-            small.retainedAars = userLibAars
+    /**
+     * A hack way to strip aar files:
+     *  - Strip the task inputs before the task execute
+     *  - Restore the inputs after the task executed
+     * by what the task doesn't know what happen, and will be considered as 'UP-TO-DATE'
+     * at next time it be called. This means a less I/O.
+     * @param t the task who will merge aar files
+     * @param closure the function to gather all the paths to be stripped
+     */
+    private static void stripAarFiles(Task t, Closure closure) {
+        t.doFirst {
+            List<File> stripPaths = []
+            closure(stripPaths)
+
+            Set<Map> strips = []
+            stripPaths.each {
+                def backup = new File(it.parentFile, "$it.name~")
+                strips.add(org: it, backup: backup)
+                it.renameTo(backup)
+            }
+            it.extensions.add('strips', strips)
+        }
+        t.doLast {
+            Set<Map> strips = (Set<Map>) it.extensions.getByName('strips')
+            strips.each {
+                it.backup.renameTo(it.org)
+            }
+        }
+    }
+
+    protected static void collectAars(File d, Project src, Set outAars) {
+        if (!d.exists()) return
+
+        d.eachLine { line ->
+            def module = line.split(':')
+            def N = module.size()
+            def aar = [group: module[0], name: module[1], version: (N == 3) ? module[2] : '']
+            if (!outAars.contains(aar)) {
+                outAars.add(aar)
+            }
+        }
+    }
+
+    protected void collectLibProjects(Project project, Set<Project> outLibProjects) {
+        DependencySet compilesDependencies = project.configurations.compile.dependencies
+        Set<DefaultProjectDependency> allLibs = compilesDependencies.withType(DefaultProjectDependency.class)
+        allLibs.each {
+            def dependency = it.dependencyProject
+            if (rootSmall.isLibProject(dependency)) {
+                outLibProjects.add(dependency)
+                collectLibProjects(dependency, outLibProjects)
+            }
+        }
+    }
+
+    @Override
+    protected void hookPreReleaseBuild() {
+        super.hookPreReleaseBuild()
+
+        // Ensure generating text symbols - R.txt
+        // --------------------------------------
+        def symbolsPath = small.aapt.textSymbolOutputDir.path
+        android.aaptOptions.additionalParameters '--output-text-symbols', symbolsPath
+
+        // Resolve dependent AARs
+        // ----------------------
+        def smallLibAars = new HashSet() // the aars compiled in host or lib.*
+
+        // Collect transitive dependent `lib.*' projects
+        mTransitiveDependentLibProjects = new HashSet<>()
+        mTransitiveDependentLibProjects.addAll(mProvidedProjects)
+        mProvidedProjects.each {
+            collectLibProjects(it, mTransitiveDependentLibProjects)
+        }
+
+        // Collect aar(s) in lib.*
+        mTransitiveDependentLibProjects.each { lib ->
+            // lib.* dependencies
+            collectAarsOfProject(lib, true, smallLibAars)
+        }
+
+        // Collect aar(s) in host
+        collectAarsOfProject(rootSmall.hostProject, false, smallLibAars)
+
+        small.splitAars = smallLibAars
+        small.retainedAars = mUserLibAars
+    }
+
+    protected static def collectAarsOfLibrary(Project lib, HashSet outAars) {
+        // lib.* self
+        outAars.add(group: lib.group, name: lib.name, version: lib.version)
+        // lib.* self for android plugin 2.3.0+
+        File dir = lib.projectDir
+        outAars.add(group: dir.parentFile.name, name: dir.name, version: lib.version)
+    }
+
+    protected def collectAarsOfProject(Project project, boolean isLib, HashSet outAars) {
+        String dependenciesFileName = "$project.name-D.txt"
+
+        // Pure aars
+        File file = new File(rootSmall.preLinkAarDir, dependenciesFileName)
+        collectAars(file, project, outAars)
+
+        // Jar-only aars
+        file = new File(rootSmall.preLinkJarDir, dependenciesFileName)
+        collectAars(file, project, outAars)
+
+        if (isLib) {
+            collectAarsOfLibrary(project, outAars)
         }
     }
 
@@ -803,18 +1156,26 @@ class AppPlugin extends BundlePlugin {
         // manifests, the `processManifest` task will raise an conflict error.
         // Cause the release mode doesn't need to merge the manifest of lib.*, simply split
         // out the manifest dependencies from them.
-        processManifest.doFirst { MergeManifests it ->
-            if (pluginType != PluginType.App) return
+        if (processManifest.hasProperty('providers')) {
+            processManifest.providers = []
+        } else {
+            processManifest.doFirst { MergeManifests it ->
+                if (pluginType != PluginType.App) return
 
-            def libs = it.libraries
-            def smallLibs = []
-            libs.each {
-                if (it.name.contains(':lib.')) {
+                def libs = it.libraries
+                def smallLibs = []
+                libs.each {
+                    def components = it.name.split(':') // e.g. 'Sample:lib.style:unspecified'
+                    if (components.size() != 3) return
+
+                    def projectName = components[1]
+                    if (!rootSmall.isLibProject(projectName)) return
+
                     smallLibs.add(it)
                 }
+                libs.removeAll(smallLibs)
+                it.libraries = libs
             }
-            libs.removeAll(smallLibs)
-            it.libraries = libs
         }
         // Hook process-manifest task to remove the `android:icon' and `android:label' attribute
         // which declared in the plugin `AndroidManifest.xml' application node. (for #11)
@@ -865,6 +1226,10 @@ class AppPlugin extends BundlePlugin {
 
                     if (line.indexOf('>') > 0) { // <application /> or <application .. > in one line
                         needsFilter = false
+                        // Remove all the unused keys, fix #313
+                        filterKeys.each {
+                            line = line.replaceAll(" $it=\"[^\"]+\"", "")
+                        }
                         break
                     }
 
@@ -885,10 +1250,16 @@ class AppPlugin extends BundlePlugin {
         aaptTask.doLast { ProcessAndroidResources it ->
             // Unpack resources.ap_
             File apFile = it.packageOutputFile
+            FileTree apFiles = project.zipTree(apFile)
             File unzipApDir = new File(apFile.parentFile, 'ap_unzip')
+            unzipApDir.delete()
             project.copy {
-                from project.zipTree(apFile)
+                from apFiles
                 into unzipApDir
+
+                include 'AndroidManifest.xml'
+                include 'resources.arsc'
+                include 'res/**/*'
             }
 
             // Modify assets
@@ -898,22 +1269,30 @@ class AppPlugin extends BundlePlugin {
             File sourceOutputDir = it.sourceOutputDir
             File rJavaFile = new File(sourceOutputDir, "${small.packagePath}/R.java")
             def rev = android.buildToolsRevision
+            int noResourcesFlag = 0
+            def filteredResources = new HashSet()
+            def updatedResources = new HashSet()
+
+            // Collect the DynamicRefTable [pkgId => pkgName]
+            def libRefTable = [:]
+            mTransitiveDependentLibProjects.each {
+                def libAapt = it.tasks.withType(ProcessAndroidResources.class).find {
+                    it.variantName.startsWith('release')
+                }
+                def pkgName = libAapt.packageForR
+                def pkgId = sPackageIds[it.name]
+                libRefTable.put(pkgId, pkgName)
+            }
+
             Aapt aapt = new Aapt(unzipApDir, rJavaFile, symbolFile, rev)
-            if (small.retainedTypes != null) {
-                aapt.filterResources(small.retainedTypes)
+            if (small.retainedTypes != null && small.retainedTypes.size() > 0) {
+                aapt.filterResources(small.retainedTypes, filteredResources)
                 Log.success "[${project.name}] split library res files..."
 
-                aapt.filterPackage(small.retainedTypes, small.packageId, small.idMaps,
-                        small.retainedStyleables)
+                aapt.filterPackage(small.retainedTypes, small.packageId, small.idMaps, libRefTable,
+                        small.retainedStyleables, updatedResources)
 
                 Log.success "[${project.name}] slice asset package and reset package id..."
-
-                int noResourcesFlag = (small.retainedTypes.size() == 0) ? 1 : 0
-                int abiFlag = getABIFlag()
-                int flags = (abiFlag << 1) | noResourcesFlag
-                if (aapt.writeSmallFlags(flags)) {
-                    Log.success "[${project.name}] add flags: ${Integer.toBinaryString(flags)}..."
-                }
 
                 String pkg = small.packageName
                 // Overwrite the aapt-generated R.java with full edition
@@ -926,6 +1305,7 @@ class AppPlugin extends BundlePlugin {
                 def retainedRFiles = [small.rJavaFile]
                 small.vendorTypes.each { name, types ->
                     File aarDir = new File(small.aarDir, name)
+                    // TODO: read the aar package name once and store
                     File manifestFile = new File(aarDir, 'AndroidManifest.xml')
                     def manifest = new XmlParser().parse(manifestFile)
                     String aarPkg = manifest.@package
@@ -946,12 +1326,47 @@ class AppPlugin extends BundlePlugin {
 
                 Log.success "[${project.name}] split library R.java files..."
             } else {
-                aapt.resetPackage(small.packageId, small.packageIdStr, small.idMaps)
-                Log.success "[${project.name}] reset resource package id..."
+                noResourcesFlag = 1
+                if (aapt.deleteResourcesDir(filteredResources)) {
+                    Log.success "[${project.name}] remove resources dir..."
+                }
+
+                if (aapt.deletePackage(filteredResources)) {
+                    Log.success "[${project.name}] remove resources.arsc..."
+                }
+
+                if (sourceOutputDir.deleteDir()) {
+                    Log.success "[${project.name}] remove R.java..."
+                }
+
+                small.symbolFile.delete() // also delete the generated R.txt
             }
 
-            // Repack resources.ap_
-            project.ant.zip(baseDir: unzipApDir, destFile: apFile)
+            int abiFlag = getABIFlag()
+            int flags = (abiFlag << 1) | noResourcesFlag
+            if (aapt.writeSmallFlags(flags, updatedResources)) {
+                Log.success "[${project.name}] add flags: ${Integer.toBinaryString(flags)}..."
+            }
+
+            String aaptExe = small.aapt.buildTools.getPath(BuildToolInfo.PathId.AAPT)
+
+            // Delete filtered entries.
+            // Cause there is no `aapt update' command supported, so for the updated resources
+            // we also delete first and run `aapt add' later.
+            filteredResources.addAll(updatedResources)
+            ZipUtils.with(apFile).deleteAll(filteredResources)
+
+            // Re-add updated entries.
+            // $ aapt add resources.ap_ file1 file2 ...
+            project.exec {
+                executable aaptExe
+                workingDir unzipApDir
+                args 'add', apFile.path
+                args updatedResources
+
+                // store the output instead of printing to the console
+                standardOutput = new ByteArrayOutputStream()
+            }
         }
     }
 
@@ -961,7 +1376,7 @@ class AppPlugin extends BundlePlugin {
     private def hookJavac(Task javac, boolean minifyEnabled) {
         javac.doFirst { JavaCompile it ->
             // Dynamically provided jars
-            it.classpath += project.files(getLibraryJars())
+            it.classpath += project.files(getLibraryJars().findAll{ it.exists() })
         }
         javac.doLast { JavaCompile it ->
             if (minifyEnabled) return // process later in proguard task
@@ -991,56 +1406,76 @@ class AppPlugin extends BundlePlugin {
      * resource `mipmap/ic_launcher' and `string/app_name' are excluded.
      */
     protected def getReservedResourceKeys() {
-        def merger = new XmlParser().parse(small.mergerXml)
-        def dataSets = merger.dataSet.findAll {
-            it.@config == 'main' || it.@config == 'release'
+        Set<SymbolParser.Entry> outTypeEntries = new HashSet<>()
+        Set<String> outStyleableKeys = new HashSet<>()
+        collectReservedResourceKeys(null, null, outTypeEntries, outStyleableKeys)
+        def keys = []
+        outTypeEntries.each {
+            keys.add("$it.type/$it.name")
         }
-        def resourceKeys = []
+        outStyleableKeys.each {
+            keys.add("styleable/$it")
+        }
+        return keys
+    }
+
+    protected void collectReservedResourceKeys(config, path,
+                                               Set<SymbolParser.Entry> outTypeEntries,
+                                               Set<String> outStyleableKeys) {
+        def merger = new XmlParser().parse(small.mergerXml)
+        def filter = config == null ? {
+            it.@config == 'main' || it.@config == 'release'
+        } : {
+            it.@config = config
+        }
+        def dataSets = merger.dataSet.findAll filter
         dataSets.each { // <dataSet config="main" generated-set="main$Generated">
             it.source.each { // <source path="**/${project.name}/src/main/res">
+                if (path != null && it.@path != path) return
+
                 it.file.each {
-                    def type = it.@type
+                    String type = it.@type
                     if (type != null) { // <file name="activity_main" ... type="layout"/>
-                        def key = "$type/${it.@name}" // layout/activity_main
-                        if (key == 'mipmap/ic_launcher') return // DON'T NEED IN BUNDLE
-                        if (!resourceKeys.contains(key)) resourceKeys.add(key)
+                        def name = it.@name
+                        if (type == 'mipmap' && name == 'ic_launcher') return // NO NEED IN BUNDLE
+                        def key = new SymbolParser.Entry(type, name) // layout/activity_main
+                        outTypeEntries.add(key)
                         return
                     }
 
                     it.children().each {
                         type = it.name()
-                        def name = it.@name
+                        String name = it.@name
                         if (type == 'string') {
                             if (name == 'app_name') return // DON'T NEED IN BUNDLE
                         } else if (type == 'style') {
                             name = name.replaceAll("\\.", "_")
                         } else if (type == 'declare-styleable') {
                             // <declare-styleable name="MyTextView">
-                            type = 'styleable'
                             it.children().each { // <attr format="string" name="label"/>
                                 def attr = it.@name
-                                def key
                                 if (attr.startsWith('android:')) {
                                     attr = attr.replaceAll(':', '_')
                                 } else {
-                                    key = "attr/$attr"
-                                    if (!resourceKeys.contains(key)) resourceKeys.add(key)
+                                    def key = new SymbolParser.Entry('attr', attr)
+                                    outTypeEntries.add(key)
                                 }
-                                key = "styleable/${name}_${attr}"
-                                if (!resourceKeys.contains(key)) resourceKeys.add(key)
+                                String key = "${name}_${attr}"
+                                outStyleableKeys.add(key)
                             }
+                            outStyleableKeys.add(name)
+                            return
                         } else if (type.endsWith('-array')) {
                             // string-array or integer-array
                             type = 'array'
                         }
 
-                        def key = "$type/$name"
-                        if (!resourceKeys.contains(key)) resourceKeys.add(key)
+                        def key = new SymbolParser.Entry(type, name)
+                        outTypeEntries.add(key)
                     }
                 }
             }
         }
-        return resourceKeys
     }
 
     /**

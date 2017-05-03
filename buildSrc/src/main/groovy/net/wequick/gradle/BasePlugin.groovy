@@ -17,9 +17,6 @@ package net.wequick.gradle
 
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.gradle.logging.StyledTextOutput
-import org.gradle.logging.StyledTextOutput.Style
-import org.gradle.logging.StyledTextOutputFactory
 
 /**
  *
@@ -37,10 +34,6 @@ public abstract class BasePlugin implements Plugin<Project> {
 
     void apply(Project project) {
         this.project = project
-
-        if (Log.out == null) {
-            Log.out = project.gradle.services.get(StyledTextOutputFactory).create('')
-        }
 
         def sp = project.gradle.startParameter
         def p = sp.projectDir
@@ -71,21 +64,8 @@ public abstract class BasePlugin implements Plugin<Project> {
     protected void configureProject() {
         // Tidy up while gradle build finished
         project.gradle.buildFinished { result ->
-            Log.out = null
             if (result.failure == null) return
             tidyUp()
-        }
-
-        // Automatic add `small' dependency
-        if (smallCompileType != null) {
-            project.afterEvaluate {
-                if (rootSmall.smallProject != null) {
-                    project.dependencies.add(smallCompileType, rootSmall.smallProject)
-                } else {
-                    def version = rootSmall.aarVersion
-                    project.dependencies.add(smallCompileType, "${SMALL_AAR_PREFIX}$version")
-                }
-            }
         }
     }
 
@@ -95,44 +75,10 @@ public abstract class BasePlugin implements Plugin<Project> {
         return (T) project.small
     }
 
-    protected RootExtension getRootSmall() {
-        return project.rootProject.small
-    }
-
     protected PluginType getPluginType() { return PluginType.Unknown }
 
     /** Restore state for DEBUG mode */
     protected void tidyUp() { }
 
-    protected String getSmallCompileType() { return null }
-
     protected abstract Class<? extends BaseExtension> getExtensionClass()
-
-    /**
-     * This class consists exclusively of static methods for printing colourful text
-     */
-    public final class Log {
-
-        protected static StyledTextOutput out
-
-        public static void header(String text) {
-            out.style(Style.UserInput)
-            out.withStyle(Style.Info).text('[Small] ')
-            out.println(text)
-        }
-
-        public static void success(String text) {
-            out.style(Style.Normal).format('\t%-64s', text)
-            out.withStyle(Style.Identifier).text('[  OK  ]')
-            out.println()
-        }
-
-        public static void warn(String text) {
-            out.style(Style.UserInput).format('\t%s', text).println()
-        }
-
-        public static void footer(String text) {
-            out.style(Style.UserInput).format('\t%s', text).println()
-        }
-    }
 }

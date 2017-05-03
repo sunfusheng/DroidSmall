@@ -11,8 +11,14 @@ sourceSets {
 dependencies {
     if (gradle.startParameter.projectDir == project.projectDir) {
         // gradlew -p buildSrc xx
-        provided 'com.android.tools.build:gradle:2.0.0'
+        provided 'com.android.tools.build:gradle:2.3.0'
     } else {
-        compile 'com.android.tools.build:gradle:2.0.0'
+        compile 'com.android.tools.build:gradle:2.3.0'
     }
+    compile 'org.fusesource.jansi:jansi:1.8'
+}
+
+tasks.withType(GroovyCompile) {
+    sourceCompatibility = '1.7'
+    targetCompatibility = '1.7'
 }

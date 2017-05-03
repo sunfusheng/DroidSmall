@@ -24,6 +24,9 @@ import org.gradle.api.Project
 public class Aapt {
 
     public static final int ID_DELETED = -1
+    public static final String FILE_ARSC = 'resources.arsc'
+    public static final String FILE_MANIFEST = 'AndroidManifest.xml'
+    private static final String ENTRY_SEPARATOR = '/'
 
     private File mAssetDir
     private File mJavaFile
@@ -43,31 +46,30 @@ public class Aapt {
      * @param pp new package id
      * @param idMaps
      */
-    void filterPackage(List retainedTypes, int pp, Map idMaps, List retainedStyleables) {
-        File arscFile = new File(mAssetDir, 'resources.arsc')
-        if (retainedTypes.size() == 0) {
-            // Remove everything
-            mJavaFile.write('')
-            if (mSymbolFile != null) mSymbolFile.write('')
-            arscFile.delete()
-            return
-        }
-
+    void filterPackage(List retainedTypes, int pp, Map idMaps, Map libRefTable,
+                       List retainedStyleables,
+                       Set outUpdatedResources) {
+        File arscFile = new File(mAssetDir, FILE_ARSC)
         def arscEditor = new ArscEditor(arscFile, mToolsRevision)
 
         // Filter R.txt
         if (mSymbolFile != null) filterRtext(mSymbolFile, retainedTypes, retainedStyleables)
         // Filter resources.arsc
-        arscEditor.slice(pp, idMaps, retainedTypes)
+        arscEditor.slice(pp, idMaps, libRefTable, retainedTypes)
+        outUpdatedResources.add(FILE_ARSC)
 
-        resetAllXmlPackageId(mAssetDir, pp, idMaps)
+        resetAllXmlPackageId(mAssetDir, pp, idMaps, outUpdatedResources)
     }
 
-    def writeSmallFlags(int flags) {
+    def writeSmallFlags(int flags, Set outUpdatedResources) {
         if (flags == 0) return false
 
-        def e = new AXmlEditor(new File(mAssetDir, 'AndroidManifest.xml'))
-        return e.setSmallFlags(flags)
+        def e = new AXmlEditor(new File(mAssetDir, FILE_MANIFEST))
+        if (e.setSmallFlags(flags)) {
+            outUpdatedResources.add(FILE_MANIFEST)
+            return true
+        }
+        return false
     }
 
     /**
@@ -77,7 +79,7 @@ public class Aapt {
      * @param idMaps
      */
     void resetPackage(int pp, String ppStr, Map idMaps) {
-        File arscFile = new File(mAssetDir, 'resources.arsc')
+        File arscFile = new File(mAssetDir, FILE_ARSC)
         def arscEditor = new ArscEditor(arscFile, null)
 
         // Modify R.java
@@ -85,7 +87,16 @@ public class Aapt {
         // Modify resources.arsc
         arscEditor.reset(pp, idMaps)
 
-        resetAllXmlPackageId(mAssetDir, pp, idMaps)
+        resetAllXmlPackageId(mAssetDir, pp, idMaps, null)
+    }
+
+    boolean deletePackage(Set outFilteredResources) {
+        File arscFile = new File(mAssetDir, FILE_ARSC)
+        if (arscFile.exists()) {
+            outFilteredResources.add(FILE_ARSC)
+            return arscFile.delete()
+        }
+        return false
     }
 
     /**
@@ -101,7 +112,7 @@ public class Aapt {
 
     void manifest(Project project, Map options) {
         // Create source file
-        File tempManifest = new File(mAssetDir, 'AndroidManifest.xml')
+        File tempManifest = new File(mAssetDir, FILE_MANIFEST)
         tempManifest.write("""<manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="${options.packageName}"
     android:versionName="${options.versionName}"
@@ -126,12 +137,15 @@ public class Aapt {
      * Filter resources with specific types
      * @param retainedTypes
      */
-    void filterResources(List retainedTypes) {
+    void filterResources(List retainedTypes, Set outFilteredResources) {
         def resDir = new File(mAssetDir, 'res')
         resDir.listFiles().each { typeDir ->
             def type = retainedTypes.find { typeDir.name.startsWith(it.name) }
             if (type == null) {
                 // Split whole type
+                typeDir.listFiles().each {
+                    outFilteredResources.add("res/$typeDir.name/$it.name" as String)
+                }
                 typeDir.deleteDir()
                 return
             }
@@ -141,6 +155,7 @@ public class Aapt {
                 def entry = type.entries.find { entryFile.name.startsWith("${it.name}.") }
                 if (entry == null) {
                     // Split specify entry
+                    outFilteredResources.add("res/$typeDir.name/$entryFile.name" as String)
                     entryFile.delete()
                     retainedEntryCount--
                 }
@@ -152,12 +167,34 @@ public class Aapt {
         }
     }
 
+    boolean deleteResourcesDir(Set outFilters) {
+        def resDir = new File(mAssetDir, 'res')
+        if (resDir.exists()) {
+            resDir.listFiles().each { dir ->
+                dir.listFiles().each { file ->
+                    outFilters.add("res/$dir.name/$file.name" as String)
+                }
+            }
+            return resDir.deleteDir()
+        }
+        return false
+    }
+
     /** Reset package id for *.xml */
-    private void resetAllXmlPackageId(File dir, int pp, Map idMaps) {
+    private static void resetAllXmlPackageId(File dir, int pp, Map idMaps, Set outUpdatedResources) {
+        int len = dir.canonicalPath.length() + 1 // bypass '/'
+        def isWindows = (File.separator != ENTRY_SEPARATOR)
         dir.eachFileRecurse(FileType.FILES) { file ->
             if (file.name.endsWith('.xml')) {
                 def editor = new AXmlEditor(file)
                 editor.setPackageId(pp, idMaps)
+                if (outUpdatedResources != null) {
+                    def path = file.canonicalPath.substring(len)
+                    if (isWindows) { // compat for windows
+                        path = path.replaceAll('\\\\', ENTRY_SEPARATOR)
+                    }
+                    outUpdatedResources.add(path)
+                }
             }
         }
     }

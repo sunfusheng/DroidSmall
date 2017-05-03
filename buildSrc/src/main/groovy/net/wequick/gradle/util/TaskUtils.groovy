@@ -13,18 +13,19 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package net.wequick.gradle
+package net.wequick.gradle.util
 
-public enum PluginType {
-    Unknown (0),
-    Host    (1),
-    App     (2),
-    Library (3),
-    Asset   (4),
-    Stub    (5)
+import com.android.build.gradle.internal.tasks.PrepareLibraryTask
 
-    private int value
-    public PluginType(int value) {
-        this.value = value
+public class TaskUtils {
+
+    public static File getAarExplodedDir(PrepareLibraryTask task) {
+        if (task.hasProperty('explodedDir')) {
+            return task.explodedDir
+        }
+
+        def files = task.outputs.files.files
+        if (files != null) return files[0]
+        return null
     }
 }

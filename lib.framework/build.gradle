@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.neenbedankt.android-apt'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -23,20 +22,14 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
     // SharedPreferences
-    apt 'de.devland.esperandro:esperandro:2.2.0'
     compile 'de.devland.esperandro:esperandro-api:2.2.0'
-
-    // ButterKnife
-    compile 'com.jakewharton:butterknife:7.0.1'
+    annotationProcessor 'de.devland.esperandro:esperandro:2.2.0'
 
     // Logger
     compile 'com.orhanobut:logger:1.4'
 
     // OkHttp3
     compile 'com.squareup.okhttp3:okhttp:3.2.0'
-
-    // Material Dialogs
-    compile 'com.afollestad.material-dialogs:core:0.8.6.2'
 
     compile project(':lib.style')
 }

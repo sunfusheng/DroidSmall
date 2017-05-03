@@ -17,18 +17,18 @@ import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
 
-import butterknife.Bind;
+import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class NumberActivity extends BaseActivity<SingleControl> {
 
-    @Bind(R.id.et_number)
+    @BindView(R.id.et_number)
     EditText etNumber;
-    @Bind(R.id.tv_number)
+    @BindView(R.id.tv_number)
     TextView tvNumber;
-    @Bind(R.id.tv_result)
+    @BindView(R.id.tv_result)
     TextView tvResult;
-    @Bind(R.id.toolbar)
+    @BindView(R.id.toolbar)
     Toolbar toolbar;
 
     @Override
@@ -81,11 +81,15 @@ public class NumberActivity extends BaseActivity<SingleControl> {
 
     public void getPhoneLocationCallBack() {
         PhoneEntity phoneEntity = mModel.get("PhoneEntity");
-        if (phoneEntity == null || phoneEntity.getRetData() == null) return;
-        PhoneEntity.RetDataEntity entity = phoneEntity.getRetData();
-        tvResult.setText("电话号码："+entity.getTelString()+"\n"+
-                "供应商："+entity.getCarrier()+"\n"+
-                "归属地："+entity.getProvince());
+        if (phoneEntity == null) return;
+        if (phoneEntity.getError_code() != 0 && !TextUtils.isEmpty(phoneEntity.getReason())) {
+            ToastTip.show(phoneEntity.getReason());
+            return;
+        }
+        PhoneEntity.ResultEntity entity = phoneEntity.getResult();
+        tvResult.setText("电话号码：" + entity.getPhone() + "\n" +
+                "供应商：" + entity.getCompany() + "\n" +
+                "归属地：" + entity.getProvince() + " " + entity.getCity());
     }
 
     @Override

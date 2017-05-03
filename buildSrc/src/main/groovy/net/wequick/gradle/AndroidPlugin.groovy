@@ -3,12 +3,19 @@ package net.wequick.gradle
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.internal.pipeline.TransformTask
 import com.android.build.gradle.internal.transforms.ProGuardTransform
+import com.android.build.gradle.internal.tasks.PrepareLibraryTask
+import com.android.build.gradle.tasks.MergeManifests
+import net.wequick.gradle.util.TaskUtils
 import org.gradle.api.Project
 
 class AndroidPlugin extends BasePlugin {
 
+    protected boolean released
+
     void apply(Project project) {
         super.apply(project)
+
+        released = isBuildingRelease()
     }
 
     @Override
@@ -20,15 +27,27 @@ class AndroidPlugin extends BasePlugin {
         return (AndroidExtension) project.small
     }
 
+    protected RootExtension getRootSmall() {
+        return project.rootProject.small
+    }
+
     protected com.android.build.gradle.BaseExtension getAndroid() {
         return project.android
     }
+
+    protected String getSmallCompileType() { return null }
 
     @Override
     protected void configureProject() {
         super.configureProject()
 
+        project.beforeEvaluate {
+            beforeEvaluate(released)
+        }
+
         project.afterEvaluate {
+            afterEvaluate(released)
+
             if (!android.hasProperty('applicationVariants')) return
 
             android.applicationVariants.all { BaseVariant variant ->
@@ -41,14 +60,124 @@ class AndroidPlugin extends BasePlugin {
                     configureProguard(variant, proguard, pt)
                 }
 
+                // While variant created, everything of `Android Plugin' should be ready
+                // and then we can do some extensions with it
                 if (variant.buildType.name != 'release') {
-                    configureDebugVariant(variant)
+                    if (!released) {
+                        configureDebugVariant(variant)
+                    }
+                } else {
+                    if (released) {
+                        configureReleaseVariant(variant)
+                    }
+                }
+            }
+        }
+    }
+
+    protected void beforeEvaluate(boolean released) { }
+
+    protected void afterEvaluate(boolean released) {
+        // Automatic add `small' dependency
+        if (rootSmall.smallProject != null) {
+            project.dependencies.add(smallCompileType, rootSmall.smallProject)
+        } else {
+            project.dependencies.add(smallCompileType, "${SMALL_AAR_PREFIX}$rootSmall.aarVersion")
+        }
+
+        def preBuild = project.tasks['preBuild']
+        if (released) {
+            preBuild.doFirst {
+                hookPreReleaseBuild()
+            }
+        } else {
+            preBuild.doFirst {
+                hookPreDebugBuild()
+            }
+        }
+        preBuild.doLast {
+            removeUnimplementedProviders()
+        }
+    }
+
+    /**
+     * Remove unimplemented content providers in the bundle manifest.
+     *
+     * On debug mode the `Stub` modules are compiled to each bundle by which
+     * the bundles manifest may be contains the `Stub` content provider.
+     * If the bundle wasn't implement the provider class, it would raise an exception
+     * on running the bundle independently.
+     *
+     * So we need to remove all the unimplemented content providers from `Stub`.
+     */
+    protected void removeUnimplementedProviders() {
+        if (pluginType == PluginType.Host) return // nothing to do with host
+        MergeManifests manifests = project.tasks.withType(MergeManifests.class)[0]
+        if (manifests.hasProperty('providers')) {
+            return
+        }
+
+        project.tasks.withType(PrepareLibraryTask.class).each {
+            it.doLast { PrepareLibraryTask aar ->
+                File aarDir = TaskUtils.getAarExplodedDir(aar)
+                if (aarDir == null) {
                     return
                 }
 
-                // While release variant created, everything of `Android Plugin' should be ready
-                // and then we can do some extensions with it
-                configureReleaseVariant(variant)
+                def aarName = aarDir.parentFile.name
+                if (rootSmall.hostStubProjects.find { it.name == aarName } != null) {
+                    return
+                }
+
+                File manifest = new File(aarDir, 'AndroidManifest.xml')
+                def s = ''
+                boolean enteredProvider = false
+                boolean removed = false
+                boolean implemented
+                int loc
+                String providerLines
+                manifest.eachLine { line ->
+                    if (!enteredProvider) {
+                        loc = line.indexOf('<provider')
+                        if (loc < 0) {
+                            s += line + '\n'
+                            return null
+                        }
+
+                        enteredProvider = true
+                        implemented = false
+                        providerLines = ''
+                    }
+
+                    final def appId = android.defaultConfig.applicationId
+                    final def nameTag = 'android:name="'
+                    loc = line.indexOf(nameTag)
+                    if (loc >= 0) {
+                        loc += nameTag.length()
+                        def tail = line.substring(loc)
+                        def nextLoc = tail.indexOf('"')
+                        def name = tail.substring(0, nextLoc)
+                        implemented = name.startsWith(appId) // is implemented by self
+                        providerLines += line + '\n'
+                    } else {
+                        providerLines += line + '\n'
+                    }
+
+                    loc = line.indexOf('>')
+                    if (loc >= 0) { // end of <provider>
+                        enteredProvider = false
+                        if (implemented) {
+                            s += providerLines
+                        } else {
+                            removed = true
+                        }
+                    }
+                    return null
+                }
+
+                if (removed) {
+                    manifest.write(s, 'utf-8')
+                }
             }
         }
     }
@@ -71,18 +200,37 @@ class AndroidPlugin extends BasePlugin {
         pt.keep('@android.support.annotation.Keep interface * { *; }')
     }
 
+    protected void hookPreDebugBuild() { }
+
+    protected void hookPreReleaseBuild() { }
+
     protected void configureDebugVariant(BaseVariant variant) { }
 
     protected void configureReleaseVariant(BaseVariant variant) {
         // Init default output file (*.apk)
         small.outputFile = variant.outputs[0].outputFile
-        small.explodeAarDirs = project.tasks.findAll {
-            it.hasProperty('explodedDir')
-        }.collect { it.explodedDir }
+        small.explodeAarDirs = project.tasks
+                .withType(PrepareLibraryTask.class)
+                .collect { TaskUtils.getAarExplodedDir(it) }
 
         // Hook variant tasks
         variant.assemble.doLast {
             tidyUp()
+        }
+    }
+
+    /** Check if is building self in release mode */
+    protected boolean isBuildingRelease() {
+        def mT = rootSmall.mT
+        def mP = rootSmall.mP
+        if (mT == null) return false // no tasks
+
+        if (mP == null) {
+            // gradlew buildLibs | buildBundles
+            return (small.type == PluginType.Library || small.type == PluginType.Host) ?
+                    (mT == 'buildLib') : (mT == 'buildBundle')
+        } else {
+            return (mP == project.name && (mT == 'assembleRelease' || mT == 'aR'))
         }
     }
 }

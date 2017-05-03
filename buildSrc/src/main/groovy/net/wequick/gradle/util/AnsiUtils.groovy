@@ -13,18 +13,25 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package net.wequick.gradle
+package net.wequick.gradle.util
 
-public enum PluginType {
-    Unknown (0),
-    Host    (1),
-    App     (2),
-    Library (3),
-    Asset   (4),
-    Stub    (5)
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 
-    private int value
-    public PluginType(int value) {
-        this.value = value
+public final class AnsiUtils {
+    public static def red(text) {
+        return ansi().fg(RED).a(text).reset()
+    }
+
+    public static def green(text) {
+        return ansi().fg(GREEN).a(text).reset()
+    }
+
+    public static def white(text) {
+        return ansi().fg(WHITE).a(text).reset()
+    }
+
+    public static def yellow(text) {
+        return ansi().fg(YELLOW).a(text).reset()
     }
 }

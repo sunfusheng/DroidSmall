@@ -19,6 +19,35 @@ package net.wequick.gradle.aapt
  * Class to parse aapt-generated text symbols file (intermediates/symbols/R.txt)
  */
 public final class SymbolParser {
+
+    public static final class Entry {
+        public String type
+        public String name
+        public String getKey() {
+            return "$type/$name"
+        }
+        Entry(type, name) {
+            this.type = type
+            this.name = name
+        }
+
+        @Override
+        String toString() {
+            return this.key
+        }
+
+        @Override
+        boolean equals(Object obj) {
+            Entry e = (Entry) obj
+            return e.type.equals(type) && e.name.equals(name)
+        }
+
+        @Override
+        int hashCode() {
+            return this.key.hashCode()
+        }
+    }
+
     /**
      * Get declare of one line
      * @param s e.g. 'int anim abc_fade_in 0x7f050000'
@@ -102,7 +131,8 @@ public final class SymbolParser {
         return es
     }
 
-    public static void collectResourceKeys(File file, List outEntries, List outStyleableKeys) {
+    public static void collectResourceKeys(File file, String targetType, List excludes,
+                                           List outEntries, List outStyleableKeys) {
         if (!file.exists()) return
 
         file.eachLine { str ->
@@ -112,13 +142,44 @@ public final class SymbolParser {
             str = str.substring(i + 1)
             i = str.indexOf(' ')
             def type = str.substring(0, i)
+            if (targetType != null && type != targetType) return
+
             str = str.substring(i + 1)
             i = str.indexOf(' ')
             def name = str.substring(0, i)
+            if (excludes != null && excludes.contains(name)) return
+
             if (type == 'styleable') {
-                outStyleableKeys.add(name)
+                if (outStyleableKeys != null) {
+                    outStyleableKeys.add(name)
+                }
             } else {
-                outEntries.add(type: type, name: name, key: "$type/$name")
+                if (outEntries != null) {
+                    outEntries.add(new Entry(type, name))
+                }
+            }
+        }
+    }
+
+    public static void collectAarResourceKeys(File file, List outEntries, List outStyleableKeys) {
+        if (!file.exists()) return
+
+        file.eachLine { str ->
+            if (str == '') return
+
+            def arr = str.split('/')
+            if (arr.length != 2) return
+
+            def type = arr[0]
+            def name = arr[1]
+            if (type == 'styleable') {
+                if (outStyleableKeys != null) {
+                    outStyleableKeys.add(name)
+                }
+            } else {
+                if (outEntries != null) {
+                    outEntries.add(new Entry(type, name))
+                }
             }
         }
     }

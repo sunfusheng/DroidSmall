@@ -13,18 +13,13 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-package net.wequick.gradle
+package net.wequick.gradle.aapt
 
-public enum PluginType {
-    Unknown (0),
-    Host    (1),
-    App     (2),
-    Library (3),
-    Asset   (4),
-    Stub    (5)
-
-    private int value
-    public PluginType(int value) {
-        this.value = value
-    }
+/**
+ * enum from include/androidfw/ResourceTypes.h
+ */
+public enum ResStringPoolSpan {
+    public static int END = 0xFFFFFFFF;
+    public static byte[] END_SPAN = [0xFF, 0xFF, 0xFF, 0xFF,
+                                     0xFF, 0xFF, 0xFF, 0xFF]
 }
