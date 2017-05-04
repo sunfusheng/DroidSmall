@@ -3,5 +3,5 @@ include ':app',
         ':lib.framework',
         ':app.main',
         ':app.phone',
-        ':app.weather',
-        ':app.shanghai.weather'
+        ':app.weather.beijing',
+        ':app.weather.shanghai'

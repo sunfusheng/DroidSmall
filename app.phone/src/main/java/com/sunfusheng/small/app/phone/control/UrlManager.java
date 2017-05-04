@@ -16,6 +16,4 @@ public interface UrlManager {
     // 手机号码归属地
     String URL_PHONE_NUM_PLACE = APISTORE_BASE_URL + "mobile";
 
-//    http://apis.haoservice.com/mobile?phone=15698219533&key=819513b936d4424e8deb25f7a330fe5a
-
 }

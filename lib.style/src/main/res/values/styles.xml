@@ -4,10 +4,7 @@
     <style name="TvTextViewStyle">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:paddingTop">10dp</item>
-        <item name="android:paddingBottom">10dp</item>
-        <item name="android:paddingLeft">20dp</item>
-        <item name="android:paddingRight">0dp</item>
+        <item name="android:padding">16dp</item>
         <item name="android:background">@drawable/ripple_item_clicked_with_mask</item>
         <item name="android:textColor">@color/font_black_2</item>
         <item name="android:textSize">15sp</item>

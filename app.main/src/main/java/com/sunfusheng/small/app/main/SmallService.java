@@ -37,9 +37,9 @@ public class SmallService extends IntentService {
     public static final String ACTION_TYPE_STATUS = "action.type.status";
 
     // 更新插件 Url
-    private static final String URL_UPDATES = "http://sunfusheng.com/assets/small/updates.json";
+    private static final String URL_UPDATES = "http://sunfusheng.com/assets/small/updates1.json";
     // 增加插件 Url
-    private static final String URL_ADDITIONS = "http://sunfusheng.com/assets/small/additions.json";
+    private static final String URL_ADDITIONS = "http://sunfusheng.com/assets/small/additions1.json";
 
     // 启动 Small 服务类型
     public static final String SMALL_CHECK_UPDATE = "small_check_update";

@@ -12,8 +12,6 @@ public class DroidApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-
         Small.preSetUp(this);
-
     }
 }

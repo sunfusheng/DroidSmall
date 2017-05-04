@@ -3,8 +3,9 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:animateLayoutChanges="true"
+    android:background="@color/bg"
+    android:orientation="vertical"
     android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar">
 
     <include layout="@layout/app_toolbar"/>
@@ -17,61 +18,27 @@
         android:textColor="@color/white"
         android:visibility="gone"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:background="@color/white"
-        android:orientation="vertical">
-
-        <TextView
-            android:id="@+id/tv_phone"
-            style="@style/TvTextViewStyle"
-            android:text="获取手机号码归属地 (Shandong`s Num)"/>
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1px"
-            android:layout_marginLeft="20dp"
-            android:background="@color/divider_1"/>
-
-        <TextView
-            android:id="@+id/tv_number"
-            style="@style/TvTextViewStyle"
-            android:text="获取手机号码归属地 (Beijing`s Num)"/>
-    </LinearLayout>
-
     <TextView
-        android:id="@+id/tv_weather"
+        android:id="@+id/tv_beijing_phone"
         style="@style/TvTextViewStyle"
         android:layout_marginTop="20dp"
-        android:text="获取北京天气信息 (Beijing`s Weather)"
-        android:visibility="visible"/>
+        android:text="查询「北京」手机号码归属地"/>
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:background="@color/white"
-        android:orientation="vertical"
-        android:visibility="gone">
+    <TextView
+        android:id="@+id/tv_weihai_phone"
+        style="@style/TvTextViewStyle"
+        android:layout_marginTop="10dp"
+        android:text="查询「威海」手机号码归属地"/>
 
-        <TextView
-            android:id="@+id/tv_beijing_weather"
-            style="@style/TvTextViewStyle"
-            android:text="获取北京天气信息 (Beijing`s Weather)"/>
+    <TextView
+        android:id="@+id/tv_beijing_weather"
+        style="@style/TvTextViewStyle"
+        android:layout_marginTop="10dp"
+        android:text="获取「北京」天气信息"/>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1px"
-            android:layout_marginLeft="20dp"
-            android:background="@color/divider_1"/>
-
-        <TextView
-            android:id="@+id/tv_shanghai_weather"
-            style="@style/TvTextViewStyle"
-            android:text="获取上海天气信息 (Shanghai`s Weather)"/>
-
-    </LinearLayout>
-
+    <TextView
+        android:id="@+id/tv_shanghai_weather"
+        style="@style/TvTextViewStyle"
+        android:layout_marginTop="10dp"
+        android:text="获取「上海」天气信息"/>
 </LinearLayout>

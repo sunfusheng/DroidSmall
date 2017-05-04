@@ -14,14 +14,26 @@
       "pkg": "com.sunfusheng.small.app.main"
     },
     {
-      "uri": "weather",
-      "pkg": "com.sunfusheng.small.app.weather"
-    },
-    {
       "uri": "phone",
       "pkg": "com.sunfusheng.small.app.phone",
       "rules": {
-        "Number": ".ui.Number"
+        "beijing": ".ui.BeijingPhone",
+        "weihai": ".ui.WeihaiPhone"
+      }
+    },
+    {
+      "uri": "weather_beijing",
+      "pkg": "com.sunfusheng.small.app.weather",
+      "rules": {
+        "beijing": ".ui.BeijingWeather"
+      }
+    },
+    {
+      "uri": "weather_shanghai",
+      "type": "app",
+      "pkg": "com.sunfusheng.small.app.shanghai.weather",
+      "rules": {
+        "shanghai": ".ui.ShanghaiWeather"
       }
     }
   ]

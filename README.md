@@ -1,6 +1,6 @@
 # DroidSmall
 
-Small 插件化调研、学习、示例应用
+DroidSmall 是一个插件化调研和学习的示例应用，希望对你有帮助。
 
 ## 工程模块
 
@@ -9,8 +9,8 @@ Small 插件化调研、学习、示例应用
 [lib.framework](https://github.com/sfsheng0322/DroidSmall/tree/master/lib.framework) : 基本框架库，包括网络请求、缓存、动态代理回调、Utils等。  
 [app.main](https://github.com/sfsheng0322/DroidSmall/tree/master/app.main) : App的主模块  
 [app.phone](https://github.com/sfsheng0322/DroidSmall/tree/master/app.phone) : 查询手机号码归属地模块  
-[app.weather](https://github.com/sfsheng0322/DroidSmall/tree/master/app.weather) : 查询北京天气模块  
-[app.shanghai.weather](https://github.com/sfsheng0322/DroidSmall/tree/master/app.shanghai.weather) : 查询上海天气模块  
+[app.weather.beijing](https://github.com/sfsheng0322/DroidSmall/tree/master/app.weather) : 查询北京天气模块  
+[app.weather.shanghai](https://github.com/sfsheng0322/DroidSmall/tree/master/app.shanghai.weather) : 查询上海天气模块  
 
 ## 写在前面的话  
 这两年热修复、组件化、插件化很火，火到中国这方面的开源项目遍地开花，例如：屠毅敏的AndroidDynamicLoader、任玉刚的dynamic-load-apk、张勇的DroidPlugin、阿里的AndFix、林光亮的Small等，除了中国这些热修复、插件化的开源项目，你有听过外国的嘛。虽然你可能看过这样的文章《插件化从入门到放弃》，但你是否还看过这样的文章《插件化从放弃到捡起》，尽管应用热修复和插件化坑多、难度高，但我们还是一往情深、纵身向前，因为她的优点远多于她的缺点。
@@ -77,7 +77,7 @@ small：核心库，用于加载安卓组件包，包括动态加载类、动态
 
 1、lib.* 与 lib.* 之间不支持资源的引用；app.* 可以引用 lib.* 下的资源。  
 
-2、如果 lib.* 下资源变化特别是删除资源，也请删掉 lib.* 下 public.txt 资源编号集合。 
+2、如果 lib.* 下资源变化特别是删除资源，也请删掉 lib.* 下 public.txt 资源编号集合，有时需要删掉宿主包下生成的smallLibs。 
 
 3、第三方SDK的 meta、Service 等需要在宿主 App 的 manifest 中声明。
 

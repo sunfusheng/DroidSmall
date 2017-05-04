@@ -11,8 +11,7 @@
     <color name="blue">#4e6cef</color>
 
     <!-- background -->
-    <color name="bg">#FFF5F5F5</color>
-    <color name="bg_pressed">#FFF2F2F2</color>
+    <color name="bg">#EEEEEE</color>
 
     <!-- material design black font color -->
     <color name="font_black_0">#212121</color>

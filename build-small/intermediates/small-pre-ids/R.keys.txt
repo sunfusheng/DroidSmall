@@ -1832,7 +1832,6 @@ int string ok
 int style EtEditTextStyle
 int style TvTextViewStyle
 int color bg
-int color bg_pressed
 int color black
 int color blue
 int color divider_1

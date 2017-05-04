@@ -27,12 +27,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     Toolbar toolbar;
     @BindView(R.id.tv_status)
     TextView tvStatus;
-    @BindView(R.id.tv_phone)
-    TextView tvPhone;
-    @BindView(R.id.tv_number)
-    TextView tvNumber;
-    @BindView(R.id.tv_weather)
-    TextView tvWeather;
+    @BindView(R.id.tv_weihai_phone)
+    TextView tvWeihaiPhone;
+    @BindView(R.id.tv_beijing_phone)
+    TextView tvBeijingPhone;
     @BindView(R.id.tv_beijing_weather)
     TextView tvBeijingWeather;
     @BindView(R.id.tv_shanghai_weather)
@@ -71,7 +69,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     private void initView() {
-        initToolBar(toolbar, false, "Android Small 插件化示例");
+        initToolBar(toolbar, false, "Small插件化示例");
 
         tvStatus.setVisibility(View.GONE);
 
@@ -89,9 +87,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     private void initListener() {
-        tvPhone.setOnClickListener(this);
-        tvWeather.setOnClickListener(this);
-        tvNumber.setOnClickListener(this);
+        tvBeijingPhone.setOnClickListener(this);
+        tvWeihaiPhone.setOnClickListener(this);
         tvBeijingWeather.setOnClickListener(this);
         tvShanghaiWeather.setOnClickListener(this);
     }
@@ -99,25 +96,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.tv_weather:
-                Small.openUri("weather", this);
+            case R.id.tv_beijing_phone:
+                Small.openUri("phone/beijing?num=18600604600&toast=Fucking Amazing!", this);
                 break;
-            case R.id.tv_phone:
-                Small.openUri("phone", this);
-                break;
-            case R.id.tv_number:
-                Small.openUri("phone/Number?num=18600604600&toast=Fucking amazing!", this);
-
-//                Intent intent = Small.getIntentOfUri("phone/Number", mContext);
-//                intent.putExtra("num", "18600604600");
-//                intent.putExtra("toast", "这样也可以");
-//                startActivity(intent);
+            case R.id.tv_weihai_phone:
+                Small.openUri("phone/weihai", this);
                 break;
             case R.id.tv_beijing_weather:
-                Small.openUri("weather", this);
+                Small.openUri("weather_beijing/beijing", this);
                 break;
             case R.id.tv_shanghai_weather:
-                Small.openUri("shanghai.weather", this);
+                Small.openUri("weather_shanghai/shanghai", this);
                 break;
         }
     }
@@ -140,9 +129,8 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
                 intent.putExtra("small", SmallService.SMALL_CHECK_ADD);
                 startService(intent);
                 return true;
-            default:
-                return super.onOptionsItemSelected(item);
         }
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
