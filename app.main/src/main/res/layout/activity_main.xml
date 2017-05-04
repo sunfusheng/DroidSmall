@@ -11,14 +11,6 @@
     <include layout="@layout/app_toolbar"/>
 
     <TextView
-        android:id="@+id/tv_status"
-        style="@style/TvTextViewStyle"
-        android:background="@color/red"
-        android:text="恭喜你！更新插件成功！"
-        android:textColor="@color/white"
-        android:visibility="gone"/>
-
-    <TextView
         android:id="@+id/tv_beijing_phone"
         style="@style/TvTextViewStyle"
         android:layout_marginTop="20dp"

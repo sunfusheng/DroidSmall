@@ -10,9 +10,10 @@
     <include layout="@layout/app_toolbar"/>
 
     <TextView
+        android:id="@+id/tv_status"
         style="@style/TvTextViewStyle"
         android:background="@color/blue"
-        android:text="更新插件成功！"
+        android:text="更新的插件"
         android:textColor="@color/white"
         android:visibility="gone"/>
 

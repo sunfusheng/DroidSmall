@@ -15,3 +15,13 @@ com.android.support:support-v4:25.3.1
 com.android.support:support-compat:25.3.1
 com.android.support:support-compat:+
 com.android.support:support-core-utils:+
+com.android.support:support-compat:+
+com.android.support:support-core-utils:+
+com.android.support:support-compat:+
+com.android.support:support-core-utils:+
+com.android.support:support-compat:+
+com.android.support:support-core-utils:+
+com.android.support:support-compat:+
+com.android.support:support-core-utils:+
+com.android.support:support-compat:+
+com.android.support:support-core-utils:+

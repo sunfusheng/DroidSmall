@@ -1,10 +1,16 @@
 package com.sunfusheng.small.app.main;
 
+import android.Manifest;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -14,6 +20,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.sunfusheng.small.lib.framework.base.BaseActivity;
+import com.sunfusheng.small.lib.framework.util.SpannableStringUtil;
 import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
@@ -25,8 +32,6 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @BindView(R.id.toolbar)
     Toolbar toolbar;
-    @BindView(R.id.tv_status)
-    TextView tvStatus;
     @BindView(R.id.tv_weihai_phone)
     TextView tvWeihaiPhone;
     @BindView(R.id.tv_beijing_phone)
@@ -54,7 +59,7 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mLocalBroadcastManager = LocalBroadcastManager.getInstance(this);
         mBroadcastReceiver = new MyBroadcastReceiver();
         IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(SmallService.ACTION_TYPE_STATUS);
+        intentFilter.addAction("DroidSmall");
         mLocalBroadcastManager.registerReceiver(mBroadcastReceiver, intentFilter);
 
         if (getSettingsSharedPreferences().manifest_code() <= 0) {
@@ -66,23 +71,23 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         if (getSettingsSharedPreferences().additions_code() <= 0) {
             getSettingsSharedPreferences().additions_code(0);
         }
+
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
     }
 
     private void initView() {
         initToolBar(toolbar, false, "Small插件化示例");
 
-        tvStatus.setVisibility(View.GONE);
-
         if (getSettingsSharedPreferences().small_update() == 1) {
-            getSettingsSharedPreferences().small_update(0);
-            tvStatus.setVisibility(View.VISIBLE);
-            tvStatus.setText("恭喜你！更新插件成功！");
+            String tip1 = tvBeijingWeather.getText().toString();
+            String tip2 = "（更新的插件）";
+            tvBeijingWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
         }
 
         if (getSettingsSharedPreferences().small_add() == 1) {
-            getSettingsSharedPreferences().small_add(0);
-            tvStatus.setVisibility(View.VISIBLE);
-            tvStatus.setText("恭喜你！增加插件成功！");
+            String tip1 = tvShanghaiWeather.getText().toString();
+            String tip2 = "（增加的插件）";
+            tvShanghaiWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
         }
     }
 
@@ -147,12 +152,38 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         mLocalBroadcastManager.unregisterReceiver(mBroadcastReceiver);
     }
 
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+            ToastTip.show("请手动打开存储空间权限");
+        }
+    }
+
+    private ProgressDialog mDialog;
+
     public class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
-            switch (intent.getAction()) {
-                case SmallService.ACTION_TYPE_STATUS:
-                    ToastTip.show(intent.getStringExtra("status"));
+            int status = intent.getIntExtra("status", -1000);
+            String tip = intent.getStringExtra("tip");
+            switch (status) {
+                case SmallService.STATUS_START:
+                    mDialog = new ProgressDialog(MainActivity.this);
+                    mDialog.setCanceledOnTouchOutside(false);
+                    mDialog.setMessage(tip);
+                    mDialog.show();
+                    break;
+                case SmallService.STATUS_DOWNLOADING:
+                    mDialog.setMessage(tip);
+                    break;
+                case SmallService.STATUS_DOWNLOAD_SUCCESS:
+                case SmallService.STATUS_FAILED:
+                    mDialog.dismiss();
+                    ToastTip.show(tip);
+                    break;
+                case SmallService.STATUS_TOAST:
+                    ToastTip.show(tip);
                     break;
             }
         }

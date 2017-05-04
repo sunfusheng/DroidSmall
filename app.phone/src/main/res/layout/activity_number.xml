@@ -9,13 +9,6 @@
 
     <include layout="@layout/app_toolbar"/>
 
-    <TextView
-        style="@style/TvTextViewStyle"
-        android:background="@color/blue"
-        android:text="更新插件成功！"
-        android:textColor="@color/white"
-        android:visibility="gone"/>
-
     <EditText
         android:id="@+id/et_number"
         style="@style/EtEditTextStyle"

@@ -23,6 +23,8 @@ public class BeijingWeatherActivity extends BaseActivity<SingleControl> {
     TextView tvResult;
     @BindView(R.id.toolbar)
     Toolbar toolbar;
+    @BindView(R.id.tv_status)
+    TextView tvStatus;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +38,8 @@ public class BeijingWeatherActivity extends BaseActivity<SingleControl> {
 
     private void initView() {
         initToolBar(toolbar, true, "北京天气");
+
+        tvStatus.setVisibility((getSettingsSharedPreferences().small_update() == 1) ? View.VISIBLE : View.GONE);
     }
 
     private void initListener() {
