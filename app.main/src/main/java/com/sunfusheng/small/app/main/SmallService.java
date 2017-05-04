@@ -56,8 +56,8 @@ public class SmallService extends IntentService {
 
 
     private LocalBroadcastManager mLocalBroadcastManager;
-    private SmallEntity mSmallEntity;
-    private List<PluginEntity> mPluginEntities;
+    private static SmallEntity mSmallEntity;
+    private static List<PluginEntity> mPluginEntities;
 
     public SmallService() {
         super("SmallService");
@@ -65,22 +65,27 @@ public class SmallService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(Intent intent) {
-        String small = intent.getStringExtra("small");
-        switch (small) {
-            case SMALL_CHECK_UPDATE: // 检查更新
-                smallCheckUpdate(URL_UPDATES);
-                break;
-            case SMALL_CHECK_ADD: // 检查更新
-                smallCheckUpdate(URL_ADDITIONS);
-                break;
-            case SMALL_DOWNLOAD_PLUGINS: // 下载插件
-                smallDownloadPlugins();
-                break;
-            case SMALL_UPDATE_BUNDLES: // 更新插件
-                smallUpdateBundles();
-                break;
-        }
+    protected void onHandleIntent(final Intent intent) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String small = intent.getStringExtra("small");
+                switch (small) {
+                    case SMALL_CHECK_UPDATE://检查更新
+                        smallCheckUpdate(URL_UPDATES);
+                        break;
+                    case SMALL_CHECK_ADD://检查更新
+                        smallCheckUpdate(URL_ADDITIONS);
+                        break;
+                    case SMALL_DOWNLOAD_PLUGINS://下载插件
+                        smallDownloadPlugins();
+                        break;
+                    case SMALL_UPDATE_BUNDLES://更新插件
+                        smallUpdateBundles();
+                        break;
+                }
+            }
+        }).start();
     }
 
     // Small 插件检查更新
@@ -99,7 +104,6 @@ public class SmallService extends IntentService {
             String plugin_bundles = sb.toString();
             if (TextUtils.isEmpty(plugin_bundles)) return false;
 
-            Log.d("------>", "【SmallService】plugin_bundles: " + plugin_bundles);
             mSmallEntity = FastJsonUtil.parseJson(plugin_bundles, SmallEntity.class);
             if (mSmallEntity == null) return false;
 
@@ -151,7 +155,7 @@ public class SmallService extends IntentService {
             }
             sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "下载插件完成，重新启动后更新");
         } catch (Exception e) {
-            sendServiceStatus(STATUS_FAILED, "下载插件异常：请检查存储空间权限");
+            sendServiceStatus(STATUS_FAILED, "下载插件异常");
             e.printStackTrace();
         }
     }
@@ -233,10 +237,7 @@ public class SmallService extends IntentService {
         boolean hasUpdates = mSmallEntity.getUpdates_code() > getSettingsSharedPreferences().updates_code();
         boolean hasAdditions = mSmallEntity.getAdditions_code() > getSettingsSharedPreferences().additions_code();
         if (!hasUpdates && !hasAdditions) return false;
-
-        if (mPluginEntities == null) {
-            mPluginEntities = new ArrayList<>();
-        }
+        mPluginEntities = new ArrayList<>();
         if (hasUpdates) {
             mPluginEntities.addAll(mSmallEntity.getUpdates());
         }
