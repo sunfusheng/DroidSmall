@@ -34,4 +34,13 @@
         android:layout_marginTop="10dp"
         android:text="获取「上海」天气信息"
         android:visibility="gone"/>
+
+    <TextView
+        android:id="@+id/tv_tip"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:padding="10dp"
+        android:textColor="@color/font_black_3"
+        android:textSize="12dp"/>
 </LinearLayout>

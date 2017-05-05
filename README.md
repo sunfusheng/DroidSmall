@@ -1,6 +1,6 @@
 # DroidSmall
 
-DroidSmall 是一个插件化调研和学习的示例应用，希望对你有帮助。
+DroidSmall 是一个插件化 Small 调研和学习的示例应用，希望对你有帮助。
 
 ## 工程模块
 

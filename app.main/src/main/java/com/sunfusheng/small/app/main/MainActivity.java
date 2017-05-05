@@ -40,9 +40,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     TextView tvBeijingWeather;
     @BindView(R.id.tv_shanghai_weather)
     TextView tvShanghaiWeather;
+    @BindView(R.id.tv_tip)
+    TextView tvTip;
 
     private LocalBroadcastManager mLocalBroadcastManager;
     private MyBroadcastReceiver mBroadcastReceiver;
+    private ProgressDialog mDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -126,11 +129,13 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     public boolean onOptionsItemSelected(MenuItem item) {
         Intent intent = new Intent(this, SmallService.class);
         switch (item.getItemId()) {
-            case R.id.action_update_plugin: // 更新插件
+            case R.id.action_update_plugin:
+                tvTip.setText("【更新插件】");
                 intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
                 startService(intent);
                 return true;
-            case R.id.action_add_plugin: // 增加插件
+            case R.id.action_add_plugin:
+                tvTip.setText("【增加插件】");
                 intent.putExtra("small", SmallService.SMALL_CHECK_ADD);
                 startService(intent);
                 return true;
@@ -156,21 +161,21 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-            ToastTip.show("请手动打开存储空间权限");
+            ToastTip.show("请手动打开存储读写权限！");
         }
     }
-
-    private ProgressDialog mDialog;
 
     public class MyBroadcastReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
             int status = intent.getIntExtra("status", -1000);
             String tip = intent.getStringExtra("tip");
+            tvTip.setText(tvTip.getText() + "\n" + tip);
+
             switch (status) {
                 case SmallService.STATUS_START:
                     mDialog = new ProgressDialog(MainActivity.this);
-                    mDialog.setCanceledOnTouchOutside(false);
+                    mDialog.setCanceledOnTouchOutside(true);
                     mDialog.setMessage(tip);
                     mDialog.show();
                     break;

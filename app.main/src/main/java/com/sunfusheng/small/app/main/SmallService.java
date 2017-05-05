@@ -88,9 +88,9 @@ public class SmallService extends IntentService {
         }).start();
     }
 
-    // Small 插件检查更新
+    // Small 检查插件更新中...
     private boolean smallCheckUpdate(String urlString) {
-        sendServiceStatus(STATUS_START, "正在检查更新...");
+        sendServiceStatus(STATUS_START, "正在请求配置文件...");
         try {
             URL url = new URL(urlString);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -102,13 +102,20 @@ public class SmallService extends IntentService {
                 sb.append(new String(buffer, 0, length));
             }
             String plugin_bundles = sb.toString();
-            if (TextUtils.isEmpty(plugin_bundles)) return false;
+            if (TextUtils.isEmpty(plugin_bundles)) {
+                sendServiceStatus(STATUS_TOAST, "配置文件为空");
+                return false;
+            }
 
             mSmallEntity = FastJsonUtil.parseJson(plugin_bundles, SmallEntity.class);
-            if (mSmallEntity == null) return false;
+            if (mSmallEntity == null) {
+                sendServiceStatus(STATUS_TOAST, "解析配置文件失败");
+                return false;
+            }
 
             getSettingsSharedPreferences().plugin_bundles(plugin_bundles);
             if (initPluginEntities()) {
+                sendServiceStatus(STATUS_DEFAULT, "解析配置文件成功！启动下载插件服务...");
                 Intent intent = new Intent(this, SmallService.class);
                 intent.putExtra("small", SMALL_DOWNLOAD_PLUGINS);
                 startService(intent);
@@ -138,7 +145,7 @@ public class SmallService extends IntentService {
                 PluginEntity pluginEntity = mPluginEntities.get(i);
                 String fileName = getFileNameByUrl(pluginEntity.getUrl());
                 if (TextUtils.isEmpty(fileName)) continue;
-                sendServiceStatus(STATUS_DEFAULT, "下载文件：" + fileName);
+                sendServiceStatus(STATUS_DEFAULT, "下载插件：" + fileName);
 
                 URL url = new URL(pluginEntity.getUrl());
                 HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -153,7 +160,8 @@ public class SmallService extends IntentService {
                 os.close();
                 is.close();
             }
-            sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "下载插件完成，重新启动后更新");
+            sendServiceStatus(STATUS_DEFAULT, "下载插件完成！");
+            sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "重新启动APP，查看效果");
         } catch (Exception e) {
             sendServiceStatus(STATUS_FAILED, "下载插件异常");
             e.printStackTrace();
@@ -174,7 +182,7 @@ public class SmallService extends IntentService {
                 JSONObject manifestObject = smallObject.has("manifest") ? smallObject.getJSONObject("manifest") : null;
                 if (manifestObject != null) {
                     Small.updateManifest(manifestObject, false);
-                    sendServiceStatus(STATUS_TOAST, "更新注册表成功");
+                    sendServiceStatus(STATUS_TOAST, "更新注册表成功！");
                 }
             }
             if (initPluginEntities()) {
@@ -187,10 +195,10 @@ public class SmallService extends IntentService {
                 }
                 if (updateManifest) {
                     getSettingsSharedPreferences().small_add(1);
-                    sendServiceStatus(STATUS_TOAST, "增加插件成功");
+                    sendServiceStatus(STATUS_TOAST, "增加插件成功！");
                 } else {
                     getSettingsSharedPreferences().small_update(1);
-                    sendServiceStatus(STATUS_TOAST, "更新插件成功");
+                    sendServiceStatus(STATUS_TOAST, "更新插件成功！");
                 }
             }
             getSettingsSharedPreferences().manifest_code(mSmallEntity.getManifest_code());
@@ -278,7 +286,6 @@ public class SmallService extends IntentService {
     protected <P> P getSharedPreferences(Class<P> spClass) {
         return Esperandro.getPreferences(spClass, this);
     }
-
     protected SettingsSharedPreferences getSettingsSharedPreferences() {
         return getSharedPreferences(SettingsSharedPreferences.class);
     }
