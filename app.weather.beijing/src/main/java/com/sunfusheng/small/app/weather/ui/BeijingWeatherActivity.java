@@ -39,7 +39,7 @@ public class BeijingWeatherActivity extends BaseActivity<SingleControl> {
     private void initView() {
         initToolBar(toolbar, true, "北京天气");
 
-//        tvStatus.setVisibility((getSettingsSharedPreferences().small_update() == 1) ? View.VISIBLE : View.GONE);
+        tvStatus.setVisibility((getSettingsSharedPreferences().small_update() == 1) ? View.VISIBLE : View.GONE);
     }
 
     private void initListener() {
