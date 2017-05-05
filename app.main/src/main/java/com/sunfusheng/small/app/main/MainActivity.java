@@ -65,15 +65,15 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         intentFilter.addAction("DroidSmall");
         mLocalBroadcastManager.registerReceiver(mBroadcastReceiver, intentFilter);
 
-        if (getSettingsSharedPreferences().manifest_code() <= 0) {
-            getSettingsSharedPreferences().manifest_code(0);
-        }
-        if (getSettingsSharedPreferences().updates_code() <= 0) {
-            getSettingsSharedPreferences().updates_code(0);
-        }
-        if (getSettingsSharedPreferences().additions_code() <= 0) {
-            getSettingsSharedPreferences().additions_code(0);
-        }
+//        if (getSettingsSharedPreferences().manifest_code() <= 0) {
+//            getSettingsSharedPreferences().manifest_code(0);
+//        }
+//        if (getSettingsSharedPreferences().updates_code() <= 0) {
+//            getSettingsSharedPreferences().updates_code(0);
+//        }
+//        if (getSettingsSharedPreferences().additions_code() <= 0) {
+//            getSettingsSharedPreferences().additions_code(0);
+//        }
 
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
     }
@@ -144,15 +144,10 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     @Override
-    public void onBackPressed() {
-        super.onBackPressed();
+    protected void onDestroy() {
         Intent intent = new Intent(this, SmallService.class);
         intent.putExtra("small", SmallService.SMALL_UPDATE_BUNDLES);
         startService(intent);
-    }
-
-    @Override
-    protected void onDestroy() {
         super.onDestroy();
         mLocalBroadcastManager.unregisterReceiver(mBroadcastReceiver);
     }
