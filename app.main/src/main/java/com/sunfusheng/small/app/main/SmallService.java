@@ -113,14 +113,16 @@ public class SmallService extends IntentService {
                 return false;
             }
 
+            sendServiceStatus(STATUS_DEFAULT, "解析配置文件成功！");
             getSettingsSharedPreferences().plugin_bundles(plugin_bundles);
-            if (initPluginEntities()) {
-                sendServiceStatus(STATUS_DEFAULT, "解析配置文件成功！启动下载插件服务...");
+
+            if (needUpdateOrAdd()) {
+                sendServiceStatus(STATUS_DOWNLOADING, "启动下载插件服务...");
                 Intent intent = new Intent(this, SmallService.class);
                 intent.putExtra("small", SMALL_DOWNLOAD_PLUGINS);
                 startService(intent);
             } else {
-                sendServiceStatus(STATUS_TOAST, "插件已是最新版本");
+                sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "插件已是最新版本");
             }
         } catch (Exception e) {
             sendServiceStatus(STATUS_FAILED, "检查更新异常");
@@ -131,7 +133,6 @@ public class SmallService extends IntentService {
 
     // 下载 Small 插件
     private void smallDownloadPlugins() {
-        sendServiceStatus(STATUS_DOWNLOADING, "正在下载插件...");
         try {
             int count = mPluginEntities.size();
             String filePath = getFilePathBySDCard() + File.separator;
@@ -161,7 +162,7 @@ public class SmallService extends IntentService {
                 is.close();
             }
             sendServiceStatus(STATUS_DEFAULT, "下载插件完成！");
-            sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "重新启动APP，查看效果");
+            sendServiceStatus(STATUS_DOWNLOAD_SUCCESS, "按返回键，重新启动APP，查看效果");
         } catch (Exception e) {
             sendServiceStatus(STATUS_FAILED, "下载插件异常");
             e.printStackTrace();
@@ -185,7 +186,7 @@ public class SmallService extends IntentService {
                     sendServiceStatus(STATUS_TOAST, "更新注册表成功！");
                 }
             }
-            if (initPluginEntities()) {
+            if (needUpdateOrAdd()) {
                 // 更新插件
                 int count = mPluginEntities.size();
                 for (int i = 0; i < count; i++) {
@@ -240,7 +241,7 @@ public class SmallService extends IntentService {
     }
 
     // 初始化要更新的插件列表
-    private boolean initPluginEntities() {
+    private boolean needUpdateOrAdd() {
         if (mSmallEntity == null) return false;
         boolean hasUpdates = mSmallEntity.getUpdates_code() > getSettingsSharedPreferences().updates_code();
         boolean hasAdditions = mSmallEntity.getAdditions_code() > getSettingsSharedPreferences().additions_code();
@@ -286,6 +287,7 @@ public class SmallService extends IntentService {
     protected <P> P getSharedPreferences(Class<P> spClass) {
         return Esperandro.getPreferences(spClass, this);
     }
+
     protected SettingsSharedPreferences getSettingsSharedPreferences() {
         return getSharedPreferences(SettingsSharedPreferences.class);
     }

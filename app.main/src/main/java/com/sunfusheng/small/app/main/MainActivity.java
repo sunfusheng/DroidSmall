@@ -7,10 +7,10 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
@@ -20,7 +20,6 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.sunfusheng.small.lib.framework.base.BaseActivity;
-import com.sunfusheng.small.lib.framework.util.SpannableStringUtil;
 import com.sunfusheng.small.lib.framework.util.ToastTip;
 
 import net.wequick.small.Small;
@@ -65,33 +64,36 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         intentFilter.addAction("DroidSmall");
         mLocalBroadcastManager.registerReceiver(mBroadcastReceiver, intentFilter);
 
-//        if (getSettingsSharedPreferences().manifest_code() <= 0) {
-//            getSettingsSharedPreferences().manifest_code(0);
-//        }
-//        if (getSettingsSharedPreferences().updates_code() <= 0) {
-//            getSettingsSharedPreferences().updates_code(0);
-//        }
-//        if (getSettingsSharedPreferences().additions_code() <= 0) {
-//            getSettingsSharedPreferences().additions_code(0);
-//        }
+        if (getSettingsSharedPreferences().manifest_code() <= 0) {
+            getSettingsSharedPreferences().manifest_code(0);
+        }
+        if (getSettingsSharedPreferences().updates_code() <= 0) {
+            getSettingsSharedPreferences().updates_code(0);
+        }
+        if (getSettingsSharedPreferences().additions_code() <= 0) {
+            getSettingsSharedPreferences().additions_code(0);
+        }
 
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        // 检查权限
+        if (PackageManager.PERMISSION_GRANTED != ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+        }
     }
 
     private void initView() {
         initToolBar(toolbar, false, "Small插件化示例");
 
-        if (getSettingsSharedPreferences().small_update() == 1) {
-            String tip1 = tvBeijingWeather.getText().toString();
-            String tip2 = "（更新的插件）";
-            tvBeijingWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
-        }
-
-        if (getSettingsSharedPreferences().small_add() == 1) {
-            String tip1 = tvShanghaiWeather.getText().toString();
-            String tip2 = "（增加的插件）";
-            tvShanghaiWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
-        }
+//        if (getSettingsSharedPreferences().small_update() == 1) {
+//            String tip1 = tvBeijingWeather.getText().toString();
+//            String tip2 = "（更新的插件）";
+//            tvBeijingWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
+//        }
+//
+//        if (getSettingsSharedPreferences().small_add() == 1) {
+//            String tip1 = tvShanghaiWeather.getText().toString();
+//            String tip2 = "（增加的插件）";
+//            tvShanghaiWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
+//        }
     }
 
     private void initListener() {
@@ -144,12 +146,17 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onBackPressed() {
+        super.onBackPressed();
         Intent intent = new Intent(this, SmallService.class);
         intent.putExtra("small", SmallService.SMALL_UPDATE_BUNDLES);
         startService(intent);
-        super.onDestroy();
+    }
+
+    @Override
+    protected void onDestroy() {
         mLocalBroadcastManager.unregisterReceiver(mBroadcastReceiver);
+        super.onDestroy();
     }
 
     @Override
