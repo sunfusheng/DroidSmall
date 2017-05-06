@@ -8,8 +8,8 @@ android {
         applicationId "com.sunfusheng.small.app.shanghai.weather"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 3
-        versionName "1.2"
+        versionCode 1
+        versionName "1.0"
     }
     buildTypes {
         release {
