@@ -4,4 +4,5 @@ include ':app',
         ':app.main',
         ':app.phone',
         ':app.weather.beijing',
-        ':app.weather.shanghai'
+        ':app.weather.shanghai',
+        ':app.about'

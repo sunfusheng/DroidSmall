@@ -92,9 +92,12 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
         }
 
         if (getSettingsSharedPreferences().small_add() == 1) {
+            tvShanghaiWeather.setVisibility(View.VISIBLE);
             String tip1 = tvShanghaiWeather.getText().toString();
             String tip2 = "（增加的插件）";
             tvShanghaiWeather.setText(SpannableStringUtil.getSpannableString(tip1 + tip2, tip2, Color.parseColor("#ff5555")));
+        } else {
+            tvShanghaiWeather.setVisibility(View.GONE);
         }
     }
 
@@ -131,18 +134,22 @@ public class MainActivity extends BaseActivity implements View.OnClickListener {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        Intent intent = new Intent(this, SmallService.class);
         switch (item.getItemId()) {
             case R.id.action_update_plugin:
                 tvTip.setText("【更新插件】");
-                intent.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
-                startService(intent);
+                Intent intent1 = new Intent(this, SmallService.class);
+                intent1.putExtra("small", SmallService.SMALL_CHECK_UPDATE);
+                startService(intent1);
                 return true;
             case R.id.action_add_plugin:
                 tvTip.setText("【增加插件】");
-                intent.putExtra("small", SmallService.SMALL_CHECK_ADD);
-                startService(intent);
+                Intent intent2 = new Intent(this, SmallService.class);
+                intent2.putExtra("small", SmallService.SMALL_CHECK_ADD);
+                startService(intent2);
                 return true;
+            case R.id.action_about:
+                Small.openUri("about", this);
+                break;
         }
         return super.onOptionsItemSelected(item);
     }

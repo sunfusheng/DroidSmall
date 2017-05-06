@@ -27,6 +27,17 @@
       "rules": {
         "beijing": ".ui.BeijingWeather"
       }
+    },
+    {
+      "uri": "weather_shanghai",
+      "pkg": "com.sunfusheng.small.app.shanghai.weather",
+      "rules": {
+        "shanghai": ".ui.ShanghaiWeather"
+      }
+    },
+    {
+      "uri": "about",
+      "pkg": "com.sunfusheng.small.app.about"
     }
   ]
 }

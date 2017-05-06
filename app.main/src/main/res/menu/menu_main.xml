@@ -3,14 +3,17 @@
 
     <item
         android:id="@+id/action_update_plugin"
-        android:orderInCategory="100"
         android:title="更新插件"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_add_plugin"
-        android:orderInCategory="100"
         android:title="增加插件"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_about"
+        android:title="关于"
         app:showAsAction="never"/>
 
 </menu>

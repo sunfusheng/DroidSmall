@@ -32,8 +32,7 @@
         android:id="@+id/tv_shanghai_weather"
         style="@style/TvTextViewStyle"
         android:layout_marginTop="10dp"
-        android:text="获取「上海」天气信息"
-        android:visibility="gone"/>
+        android:text="获取「上海」天气信息"/>
 
     <TextView
         android:id="@+id/tv_tip"
